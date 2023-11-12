@@ -16,7 +16,7 @@ func shortener(res http.ResponseWriter, req *http.Request) {
 	short := generateShortKey()
 	storage[short] = string(full_url)
 	res.WriteHeader(http.StatusCreated)
-	io.WriteString(res, *resultHost+"/"+short)
+	io.WriteString(res, "http://localhost:8080/"+short)
 }
 
 func expander(res http.ResponseWriter, req *http.Request) {

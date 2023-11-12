@@ -1,40 +1,52 @@
 package main
 
 import (
-	"io"
+	"fmt"
 	"net/http"
 	"net/http/httptest"
 	"strings"
 	"testing"
 
+	"github.com/go-resty/resty/v2"
 	"github.com/stretchr/testify/assert"
 )
 
-func Test_shortener(t *testing.T) {
-	testCases := []struct {
-		method       string
-		expectedCode int
-		requestBody  io.Reader
-		expectedBody string
-	}{
-		{method: http.MethodGet, expectedCode: http.StatusBadRequest, requestBody: nil, expectedBody: ""},
-		{method: http.MethodPost, expectedCode: http.StatusCreated, requestBody: strings.NewReader("https://some-link.com"), expectedBody: ""},
-	}
+func Test_happypath(t *testing.T) {
+	// testCases := []struct {
+	// 	method       string
+	// 	expectedCode int
+	// 	requestBody  io.Reader
+	// 	expectedBody string
+	// }{
+	// 	{method: http.MethodGet, expectedCode: http.StatusBadRequest, requestBody: nil, expectedBody: ""},
+	// 	{method: http.MethodPost, expectedCode: http.StatusCreated, requestBody: strings.NewReader("https://some-link.com"), expectedBody: ""},
+	// }
 
-	for _, tc := range testCases {
-		t.Run(tc.method, func(t *testing.T) {
-			r := httptest.NewRequest(tc.method, "/", nil)
-			w := httptest.NewRecorder()
+	handler := http.HandlerFunc(balancer)
 
-			// вызовем хендлер как обычную функцию, без запуска самого сервера
-			shortener(w, r)
+	srv := httptest.NewServer(handler)
+	defer srv.Close()
+	// for _, tc := range testCases {
 
-			assert.Equal(t, tc.expectedCode, w.Code, "Код ответа не совпадает с ожидаемым")
-			// проверим корректность полученного тела ответа, если мы его ожидаем
-			if tc.expectedBody != "" {
-				// assert.JSONEq помогает сравнить две JSON-строки
-				assert.Equal(t, tc.expectedBody, w.Body.String(), "Тело ответа не совпадает с ожидаемым")
-			}
-		})
-	}
+	req := resty.New().R()
+	req.Method = http.MethodPost
+	req.URL = srv.URL
+	req.Body = strings.NewReader("https://some-link.com")
+	resp, err := req.Send()
+	assert.NoError(t, err, "error making HTTP request")
+
+	assert.Equal(t, http.StatusCreated, resp.StatusCode(), "Код ответа не совпадает с ожидаемым")
+	// проверим корректность полученного тела ответа, если мы его ожидаем
+	assert.NotEmpty(t, resp.Body, "Тело ответа не совпадает с ожидаемым")
+
+	short := strings.Split(resp.String(), "/")[3]
+
+	req = resty.New().R()
+	req.Method = http.MethodGet
+	req.URL = srv.URL + "/" + short
+	fmt.Println(short)
+	resp, err = req.Send()
+	assert.NoError(t, err, "error making HTTP request")
+
+	assert.Equal(t, http.StatusBadRequest, resp.StatusCode(), "Код ответа не совпадает с ожидаемым")
 }

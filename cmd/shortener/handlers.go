@@ -14,7 +14,7 @@ type Result struct {
 }
 
 type Request struct {
-	Url string `json:"url"`
+	URL string `json:"url"`
 }
 
 func shortenerJSON(res http.ResponseWriter, req *http.Request) {
@@ -25,7 +25,7 @@ func shortenerJSON(res http.ResponseWriter, req *http.Request) {
 		panic(err)
 	}
 	short := generateShortKey()
-	storage[short] = string(url.Url)
+	storage[short] = string(url.URL)
 	res.Header().Add("Content-Type", "application/json")
 	res.WriteHeader(http.StatusCreated)
 	result := Result{Result: resultHost + "/" + short}
@@ -33,25 +33,25 @@ func shortenerJSON(res http.ResponseWriter, req *http.Request) {
 }
 
 func shortener(res http.ResponseWriter, req *http.Request) {
-	full_url, err := io.ReadAll(req.Body)
+	fullUrl, err := io.ReadAll(req.Body)
 	if err != nil {
 		http.Error(res, "Не удалось распарсить запрос", http.StatusBadRequest)
 		return
 	}
 	short := generateShortKey()
-	storage[short] = string(full_url)
+	storage[short] = string(fullUrl)
 	res.WriteHeader(http.StatusCreated)
 	io.WriteString(res, resultHost+"/"+short)
 }
 
 func expander(res http.ResponseWriter, req *http.Request) {
 	fmt.Println(chi.URLParam(req, "short_url"))
-	full_url, ok := storage[chi.URLParam(req, "short_url")]
+	fullUrl, ok := storage[chi.URLParam(req, "short_url")]
 	if !ok {
 		http.Error(res, "Такой ссылки нет", http.StatusBadRequest)
 		return
 	}
-	res.Header().Set("Location", full_url)
+	res.Header().Set("Location", fullUrl)
 	res.Header().Set("Content-Type", "application/json")
 	res.WriteHeader(http.StatusTemporaryRedirect)
 }

@@ -1,7 +1,6 @@
 package main
 
 import (
-	"fmt"
 	"net/http"
 	"net/http/httptest"
 	"strings"
@@ -39,12 +38,9 @@ func Test_happypath(t *testing.T) {
 	// проверим корректность полученного тела ответа, если мы его ожидаем
 	assert.NotEmpty(t, resp.Body, "Тело ответа не совпадает с ожидаемым")
 
-	short := strings.Split(resp.String(), "/")[3]
-
 	req = resty.New().R()
 	req.Method = http.MethodGet
-	req.URL = srv.URL + "/" + short
-	fmt.Println(short)
+	req.URL = srv.URL + "/" + "2476"
 	resp, err = req.Send()
 	assert.NoError(t, err, "error making HTTP request")
 

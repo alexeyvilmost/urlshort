@@ -33,25 +33,25 @@ func shortenerJSON(res http.ResponseWriter, req *http.Request) {
 }
 
 func shortener(res http.ResponseWriter, req *http.Request) {
-	fullUrl, err := io.ReadAll(req.Body)
+	fullURL, err := io.ReadAll(req.Body)
 	if err != nil {
 		http.Error(res, "Не удалось распарсить запрос", http.StatusBadRequest)
 		return
 	}
 	short := generateShortKey()
-	storage[short] = string(fullUrl)
+	storage[short] = string(fullURL)
 	res.WriteHeader(http.StatusCreated)
 	io.WriteString(res, resultHost+"/"+short)
 }
 
 func expander(res http.ResponseWriter, req *http.Request) {
 	fmt.Println(chi.URLParam(req, "short_url"))
-	fullUrl, ok := storage[chi.URLParam(req, "short_url")]
+	fullURL, ok := storage[chi.URLParam(req, "short_url")]
 	if !ok {
 		http.Error(res, "Такой ссылки нет", http.StatusBadRequest)
 		return
 	}
-	res.Header().Set("Location", fullUrl)
+	res.Header().Set("Location", fullURL)
 	res.Header().Set("Content-Type", "application/json")
 	res.WriteHeader(http.StatusTemporaryRedirect)
 }

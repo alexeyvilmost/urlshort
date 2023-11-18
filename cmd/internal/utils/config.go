@@ -26,3 +26,9 @@ func NewConfig() *Config {
 	}
 	return result
 }
+
+func DefaultConfig() *Config {
+	result := new(Config)
+	result.ServerAddress = "http://localhost:8080"
+	result.BaseURL = "localhost:8080"
+}

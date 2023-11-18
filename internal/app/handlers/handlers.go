@@ -6,7 +6,7 @@ import (
 	"log"
 	"net/http"
 
-	"github.com/alexeyvilmost/urlshort.git/cmd/shortener/internal/utils"
+	"github.com/alexeyvilmost/urlshort.git/internal/app/utils"
 	"github.com/go-chi/chi/v5"
 )
 
@@ -41,7 +41,7 @@ func (h Handlers) ShortenerJSON(res http.ResponseWriter, req *http.Request) {
 	var url Request
 	err := decoder.Decode(&url)
 	if err != nil {
-		log.Fatal("Не удалось распарсить запрос")
+		log.Println("Не удалось распарсить запрос")
 		http.Error(res, "Не удалось распарсить запрос", http.StatusBadRequest)
 		return
 	}
@@ -54,7 +54,7 @@ func (h Handlers) ShortenerJSON(res http.ResponseWriter, req *http.Request) {
 func (h Handlers) Shortener(res http.ResponseWriter, req *http.Request) {
 	fullURL, err := io.ReadAll(req.Body)
 	if err != nil {
-		log.Fatal("Не удалось распарсить запрос")
+		log.Println("Не удалось распарсить запрос")
 		http.Error(res, "Не удалось распарсить запрос", http.StatusBadRequest)
 		return
 	}

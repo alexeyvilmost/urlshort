@@ -6,8 +6,8 @@ import (
 	"strings"
 	"testing"
 
-	"github.com/alexeyvilmost/urlshort.git/cmd/shortener/internal/handlers"
-	"github.com/alexeyvilmost/urlshort.git/cmd/shortener/internal/utils"
+	"github.com/alexeyvilmost/urlshort.git/internal/app/handlers"
+	"github.com/alexeyvilmost/urlshort.git/internal/app/utils"
 	"github.com/go-resty/resty/v2"
 	"github.com/stretchr/testify/assert"
 )

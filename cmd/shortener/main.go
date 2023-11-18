@@ -18,7 +18,7 @@ func StartServer() {
 	r.Post("/api/shorten", handlers.ShortenerJSON)
 	r.Get("/{short_url}", handlers.Expander)
 	log.Println(config.ServerAddress)
-	err := http.ListenAndServe("localhost:8080", r)
+	err := http.ListenAndServe(config.ServerAddress, r)
 	if err != nil {
 		log.Fatal(err)
 	}

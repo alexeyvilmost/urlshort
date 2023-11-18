@@ -7,7 +7,6 @@ import (
 	"net/http"
 
 	"github.com/alexeyvilmost/urlshort.git/internal/app/utils"
-	"github.com/go-chi/chi/v5"
 )
 
 type Result struct {
@@ -32,7 +31,7 @@ func NewHandlers(config *utils.Config) *Handlers {
 
 func (h Handlers) Shorten(URL string) string {
 	short := utils.GenerateShortKey(&h.Storage)
-	h.Storage[short] = string(URL)
+	h.Storage["/"+short] = string(URL)
 	return h.BaseURL + "/" + short
 }
 
@@ -63,7 +62,11 @@ func (h Handlers) Shortener(res http.ResponseWriter, req *http.Request) {
 }
 
 func (h Handlers) Expander(res http.ResponseWriter, req *http.Request) {
-	fullURL, ok := h.Storage[chi.URLParam(req, "short_url")]
+	log.Println(len(h.Storage))
+	for k, v := range h.Storage {
+		log.Println(k, ": ", v)
+	}
+	fullURL, ok := h.Storage[req.URL.Path]
 	if !ok {
 		http.Error(res, "Такой ссылки нет", http.StatusBadRequest)
 		return

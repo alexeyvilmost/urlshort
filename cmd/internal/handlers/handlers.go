@@ -2,8 +2,8 @@ package handlers
 
 import (
 	"encoding/json"
-	"fmt"
 	"io"
+	"log"
 	"net/http"
 
 	"github.com/alexeyvilmost/urlshort.git/cmd/internal/utils"
@@ -31,7 +31,7 @@ func NewHandlers(config *utils.Config) *Handlers {
 }
 
 func (h Handlers) Shorten(URL string) string {
-	short := utils.GenerateShortKey(h.Storage)
+	short := utils.GenerateShortKey(&h.Storage)
 	h.Storage[short] = string(URL)
 	return h.BaseURL + "/" + short
 }
@@ -41,6 +41,7 @@ func (h Handlers) ShortenerJSON(res http.ResponseWriter, req *http.Request) {
 	var url Request
 	err := decoder.Decode(&url)
 	if err != nil {
+		log.Fatal("Не удалось распарсить запрос")
 		http.Error(res, "Не удалось распарсить запрос", http.StatusBadRequest)
 		return
 	}
@@ -53,6 +54,7 @@ func (h Handlers) ShortenerJSON(res http.ResponseWriter, req *http.Request) {
 func (h Handlers) Shortener(res http.ResponseWriter, req *http.Request) {
 	fullURL, err := io.ReadAll(req.Body)
 	if err != nil {
+		log.Fatal("Не удалось распарсить запрос")
 		http.Error(res, "Не удалось распарсить запрос", http.StatusBadRequest)
 		return
 	}
@@ -61,7 +63,6 @@ func (h Handlers) Shortener(res http.ResponseWriter, req *http.Request) {
 }
 
 func (h Handlers) Expander(res http.ResponseWriter, req *http.Request) {
-	fmt.Println(chi.URLParam(req, "short_url"))
 	fullURL, ok := h.Storage[chi.URLParam(req, "short_url")]
 	if !ok {
 		http.Error(res, "Такой ссылки нет", http.StatusBadRequest)

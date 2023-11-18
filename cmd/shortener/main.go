@@ -4,8 +4,8 @@ import (
 	"log"
 	"net/http"
 
-	"github.com/alexeyvilmost/urlshort.git/cmd/internal/handlers"
-	"github.com/alexeyvilmost/urlshort.git/cmd/internal/utils"
+	"github.com/alexeyvilmost/urlshort.git/cmd/shortener/internal/handlers"
+	"github.com/alexeyvilmost/urlshort.git/cmd/shortener/internal/utils"
 	"github.com/go-chi/chi"
 )
 

@@ -2,7 +2,7 @@ package storage
 
 import "github.com/go-errors/errors"
 
-const ErrDuplicateValue = errors.Error("Addition attempt failed: key value already exists")
+var ErrDuplicateValue = errors.New("Addition attempt failed: key value already exists")
 
 type Storage struct {
 	container map[string]string

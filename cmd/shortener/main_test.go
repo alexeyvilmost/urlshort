@@ -6,14 +6,18 @@ import (
 	"strings"
 	"testing"
 
+	"github.com/alexeyvilmost/urlshort.git/internal/app/config"
 	"github.com/alexeyvilmost/urlshort.git/internal/app/handlers"
-	"github.com/alexeyvilmost/urlshort.git/internal/app/utils"
 	"github.com/go-resty/resty/v2"
 	"github.com/stretchr/testify/assert"
 )
 
 func Test_happypath(t *testing.T) {
-	h := handlers.NewHandlers(utils.DefaultConfig())
+	config := &config.Config{
+		ServerAddress: "localhost:8080",
+		BaseURL:       "http://localhost:8080",
+	}
+	h := handlers.NewHandlers(config)
 	handler := http.HandlerFunc(h.Shortener)
 
 	srv := httptest.NewServer(handler)

@@ -6,6 +6,7 @@ import (
 	"log"
 	"net/http"
 
+	"github.com/alexeyvilmost/urlshort.git/internal/app/config"
 	"github.com/alexeyvilmost/urlshort.git/internal/app/utils"
 )
 
@@ -22,16 +23,17 @@ type Handlers struct {
 	Storage map[string]string
 }
 
-func NewHandlers(config *utils.Config) *Handlers {
-	result := new(Handlers)
-	result.BaseURL = config.BaseURL
-	result.Storage = map[string]string{}
+func NewHandlers(config *config.Config) *Handlers {
+	result := &Handlers{
+		BaseURL: config.BaseURL,
+		Storage: map[string]string{},
+	}
 	return result
 }
 
 func (h Handlers) Shorten(URL string) string {
-	short := utils.GenerateShortKey(&h.Storage)
-	h.Storage["/"+short] = string(URL)
+	short := utils.GetUniqueShortKey(&h.Storage)
+	h.Storage["/"+short] = URL
 	return h.BaseURL + "/" + short
 }
 
@@ -40,7 +42,7 @@ func (h Handlers) ShortenerJSON(res http.ResponseWriter, req *http.Request) {
 	var url Request
 	err := decoder.Decode(&url)
 	if err != nil {
-		log.Println("Не удалось распарсить запрос")
+		log.Println("Не удалось распарсить запрос: ", err)
 		http.Error(res, "Не удалось распарсить запрос", http.StatusBadRequest)
 		return
 	}
@@ -53,7 +55,7 @@ func (h Handlers) ShortenerJSON(res http.ResponseWriter, req *http.Request) {
 func (h Handlers) Shortener(res http.ResponseWriter, req *http.Request) {
 	fullURL, err := io.ReadAll(req.Body)
 	if err != nil {
-		log.Println("Не удалось распарсить запрос")
+		log.Println("Не удалось распарсить запрос: ", err)
 		http.Error(res, "Не удалось распарсить запрос", http.StatusBadRequest)
 		return
 	}
@@ -62,10 +64,6 @@ func (h Handlers) Shortener(res http.ResponseWriter, req *http.Request) {
 }
 
 func (h Handlers) Expander(res http.ResponseWriter, req *http.Request) {
-	log.Println(len(h.Storage))
-	for k, v := range h.Storage {
-		log.Println(k, ": ", v)
-	}
 	fullURL, ok := h.Storage[req.URL.Path]
 	if !ok {
 		http.Error(res, "Такой ссылки нет", http.StatusBadRequest)

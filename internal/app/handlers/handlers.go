@@ -7,6 +7,7 @@ import (
 	"net/http"
 
 	"github.com/alexeyvilmost/urlshort.git/internal/app/config"
+	"github.com/alexeyvilmost/urlshort.git/internal/app/storage"
 	"github.com/alexeyvilmost/urlshort.git/internal/app/utils"
 )
 
@@ -20,21 +21,25 @@ type Request struct {
 
 type Handlers struct {
 	BaseURL string
-	Storage map[string]string
+	Storage *storage.Storage
 }
 
 func NewHandlers(config *config.Config) *Handlers {
 	result := &Handlers{
 		BaseURL: config.BaseURL,
-		Storage: map[string]string{},
+		Storage: storage.NewStorage(),
 	}
 	return result
 }
 
 func (h Handlers) Shorten(URL string) string {
-	short := utils.GetUniqueShortKey(&h.Storage)
-	h.Storage["/"+short] = URL
-	return h.BaseURL + "/" + short
+	shortURL := "/" + utils.GenerateShortKey()
+	err := h.Storage.Add(shortURL, URL)
+	for err == storage.ErrDuplicateValue {
+		shortURL = "/" + utils.GenerateShortKey()
+		err = h.Storage.Add(shortURL, URL)
+	}
+	return h.BaseURL + "/" + shortURL
 }
 
 func (h Handlers) ShortenerJSON(res http.ResponseWriter, req *http.Request) {

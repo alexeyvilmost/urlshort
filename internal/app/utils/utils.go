@@ -15,13 +15,3 @@ func GenerateShortKey() string {
 
 	return string(shortKey)
 }
-
-func GetUniqueShortKey(storage *map[string]string) string {
-	ok := true
-	var shortKey string
-	for ok {
-		shortKey = GenerateShortKey()
-		_, ok = (*storage)[shortKey]
-	}
-	return shortKey
-}

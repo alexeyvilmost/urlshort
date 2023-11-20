@@ -39,7 +39,7 @@ func (h Handlers) Shorten(URL string) string {
 		shortURL = "/" + utils.GenerateShortKey()
 		err = h.Storage.Add(shortURL, URL)
 	}
-	return h.BaseURL + "/" + shortURL
+	return h.BaseURL + shortURL
 }
 
 func (h Handlers) ShortenerJSON(res http.ResponseWriter, req *http.Request) {

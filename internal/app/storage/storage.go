@@ -24,6 +24,7 @@ func (s *Storage) Add(shortURL, fullURL string) error {
 	return nil
 }
 
-func (s *Storage) Get(shortURL string) string {
-	return s.container[shortURL]
+func (s *Storage) Get(shortURL string) (string, bool) {
+	result, ok := s.container[shortURL]
+	return result, ok
 }

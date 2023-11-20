@@ -69,7 +69,7 @@ func (h Handlers) Shortener(res http.ResponseWriter, req *http.Request) {
 }
 
 func (h Handlers) Expander(res http.ResponseWriter, req *http.Request) {
-	fullURL, ok := h.Storage[req.URL.Path]
+	fullURL, ok := h.Storage.Get(req.URL.Path)
 	if !ok {
 		http.Error(res, "Такой ссылки нет", http.StatusBadRequest)
 		return

@@ -4,10 +4,8 @@ import (
 	"net/http"
 	"time"
 
-	"go.uber.org/zap"
+	"github.com/rs/zerolog/log"
 )
-
-var sugar zap.SugaredLogger
 
 type (
 	responseData struct {
@@ -41,22 +39,18 @@ func WithLogging(h http.HandlerFunc) http.HandlerFunc {
 			size:   0,
 		}
 		lw := loggingResponseWriter{
-			ResponseWriter: w,
+			ResponseWriter: w, // встраиваем оригинальный http.ResponseWriter
 			responseData:   responseData,
 		}
-
-		h.ServeHTTP(w, r)
+		h(&lw, r) // внедряем реализацию http.ResponseWriter
 
 		duration := time.Since(start)
-
-		sugar.Infoln(
-			"uri", r.RequestURI,
-			"method", r.Method,
-			"duration", duration,
-			"status", lw.responseData.status,
-			"size", lw.responseData.size,
-		)
-
+		log.Info().
+			Str("uri", r.RequestURI).
+			Str("method", r.Method).
+			Int("status", responseData.status).
+			Dur("duration", duration).
+			Int("size", responseData.size).Msg("")
 	}
 	return http.HandlerFunc(logFn)
 }

@@ -1,18 +1,31 @@
 package storage
 
-import "github.com/go-errors/errors"
+import (
+	"os"
+
+	"github.com/go-errors/errors"
+	"github.com/rs/zerolog/log"
+)
 
 var ErrDuplicateValue = errors.New("Addition attempt failed: key value already exists")
 
 type Storage struct {
 	container map[string]string
+	file      *os.File
 }
 
 func NewStorage() *Storage {
-	result := &Storage{
-		container: map[string]string{},
+	file, err := os.Create("storage.txt")
+	if err == nil {
+		result := &Storage{
+			container: map[string]string{},
+			file:      file,
+		}
+		return result
+	} else {
+		log.Error().Msg(err.Error())
 	}
-	return result
+	return &Storage{}
 }
 
 func (s *Storage) Add(shortURL, fullURL string) error {
@@ -21,6 +34,7 @@ func (s *Storage) Add(shortURL, fullURL string) error {
 		return ErrDuplicateValue
 	}
 	s.container[shortURL] = fullURL
+	s.file.WriteString(shortURL + " : " + fullURL)
 	return nil
 }
 

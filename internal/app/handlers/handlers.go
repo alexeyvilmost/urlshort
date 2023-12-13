@@ -27,7 +27,7 @@ type Handlers struct {
 func NewHandlers(config *config.Config) *Handlers {
 	result := &Handlers{
 		BaseURL: config.BaseURL,
-		Storage: storage.NewStorage(),
+		Storage: storage.NewStorage(config.StorageFile),
 	}
 	return result
 }

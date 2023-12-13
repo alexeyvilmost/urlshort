@@ -8,12 +8,14 @@ import (
 type Config struct {
 	ServerAddress string
 	BaseURL       string
+	StorageFile   string
 }
 
 func NewConfig() *Config {
 	result := new(Config)
 	mainPtr := flag.String("a", "localhost:8080", "Base host adress")
 	resultPtr := flag.String("b", "http://localhost:8080", "Result host adress")
+	StorageFile := flag.String("f", "storage.txt", "Storage filename")
 	flag.Parse()
 	var ok bool
 	result.ServerAddress, ok = os.LookupEnv("SERVER_ADDRESS")
@@ -24,5 +26,6 @@ func NewConfig() *Config {
 	if !ok {
 		result.BaseURL = *resultPtr
 	}
+	result.StorageFile = *StorageFile
 	return result
 }

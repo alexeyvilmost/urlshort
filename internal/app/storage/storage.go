@@ -14,8 +14,8 @@ type Storage struct {
 	file      *os.File
 }
 
-func NewStorage() *Storage {
-	file, err := os.Create("storage.txt")
+func NewStorage(filename string) *Storage {
+	file, err := os.Create(filename)
 	if err == nil {
 		result := &Storage{
 			container: map[string]string{},

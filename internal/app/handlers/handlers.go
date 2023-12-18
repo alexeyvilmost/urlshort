@@ -1,6 +1,7 @@
 package handlers
 
 import (
+	"compress/gzip"
 	"encoding/json"
 	"io"
 	"log"
@@ -32,6 +33,21 @@ func NewHandlers(config *config.Config) *Handlers {
 	return result
 }
 
+func ReadCompressed(req *http.Request) (io.Reader, error) {
+	var reader io.Reader
+	if req.Header.Get("Content-Encoding") == "gzip" {
+		gz, err := gzip.NewReader(req.Body)
+		if err != nil {
+			return nil, err
+		}
+		reader = gz
+		defer gz.Close()
+	} else {
+		reader = req.Body
+	}
+	return reader, nil
+}
+
 func (h Handlers) Shorten(URL string) string {
 	shortURL := "/" + utils.GenerateShortKey()
 	err := h.Storage.Add(shortURL, URL)
@@ -43,9 +59,14 @@ func (h Handlers) Shorten(URL string) string {
 }
 
 func (h Handlers) ShortenerJSON(res http.ResponseWriter, req *http.Request) {
-	decoder := json.NewDecoder(req.Body)
+	reader, err := ReadCompressed(req)
+	if err != nil {
+		http.Error(res, err.Error(), http.StatusInternalServerError)
+		return
+	}
+	decoder := json.NewDecoder(reader)
 	var url Request
-	err := decoder.Decode(&url)
+	err = decoder.Decode(&url)
 	if err != nil {
 		log.Println("Не удалось распарсить запрос: ", err)
 		http.Error(res, "Не удалось распарсить запрос", http.StatusBadRequest)
@@ -58,7 +79,12 @@ func (h Handlers) ShortenerJSON(res http.ResponseWriter, req *http.Request) {
 }
 
 func (h Handlers) Shortener(res http.ResponseWriter, req *http.Request) {
-	fullURL, err := io.ReadAll(req.Body)
+	reader, err := ReadCompressed(req)
+	if err != nil {
+		http.Error(res, err.Error(), http.StatusInternalServerError)
+		return
+	}
+	fullURL, err := io.ReadAll(reader)
 	if err != nil {
 		log.Println("Не удалось распарсить запрос: ", err)
 		http.Error(res, "Не удалось распарсить запрос", http.StatusBadRequest)

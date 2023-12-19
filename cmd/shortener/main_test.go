@@ -16,6 +16,7 @@ func Test_happypath(t *testing.T) {
 	config := &config.Config{
 		ServerAddress: "localhost:8080",
 		BaseURL:       "http://localhost:8080",
+		StorageFile:   "storage.txt",
 	}
 	h := handlers.NewHandlers(config)
 	handler := http.HandlerFunc(h.Shortener)

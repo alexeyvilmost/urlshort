@@ -26,6 +26,9 @@ func NewConfig() *Config {
 	if !ok {
 		result.BaseURL = *resultPtr
 	}
-	result.StorageFile = *StorageFile
+	result.StorageFile, ok = os.LookupEnv("FILE_STORAGE_PATH")
+	if !ok {
+		result.StorageFile = *StorageFile
+	}
 	return result
 }

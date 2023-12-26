@@ -56,7 +56,7 @@ func (h Handlers) ShortenerJSON(res http.ResponseWriter, req *http.Request) {
 	var url Request
 	err = decoder.Decode(&url)
 	if err != nil {
-		log.Info().Msg("Не удалось распарсить запрос: " + err.Error())
+		log.Info().Err(err).Msg("Не удалось распарсить запрос: ")
 		http.Error(res, "Не удалось распарсить запрос", http.StatusBadRequest)
 		return
 	}
@@ -74,7 +74,7 @@ func (h Handlers) Shortener(res http.ResponseWriter, req *http.Request) {
 	}
 	fullURL, err := io.ReadAll(reader)
 	if err != nil {
-		log.Println("Не удалось распарсить запрос: ", err)
+		log.Error().Err(err).Msg("Не удалось распарсить запрос: ")
 		http.Error(res, "Не удалось распарсить запрос", http.StatusBadRequest)
 		return
 	}

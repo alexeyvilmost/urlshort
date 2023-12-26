@@ -1,7 +1,6 @@
 package server
 
 import (
-	"log"
 	"net/http"
 
 	"github.com/alexeyvilmost/urlshort.git/internal/app/config"
@@ -20,7 +19,6 @@ func StartServer() error {
 	r.Post("/api/shorten", logging.WithLogging(handlers.ShortenerJSON))
 	r.Get("/{short_url}", logging.WithLogging(handlers.Expander))
 	zerolog.SetGlobalLevel(config.LogLevel)
-	log.Println(config.ServerAddress)
 	err := http.ListenAndServe(config.ServerAddress, r)
 	return err
 }

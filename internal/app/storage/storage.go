@@ -15,17 +15,20 @@ type Storage struct {
 }
 
 func NewStorage(filename string) *Storage {
-	file, err := os.Create(filename)
-	if err == nil {
-		result := &Storage{
-			container: map[string]string{},
-			file:      file,
-		}
-		return result
-	} else {
-		log.Error().Msg(err.Error())
+	var file *os.File
+	var err error
+	if len(filename) != 0 {
+		file, err = os.Create(filename)
 	}
-	return &Storage{}
+	if err != nil {
+		log.Error().Msg(err.Error())
+		return &Storage{}
+	}
+	result := &Storage{
+		container: map[string]string{},
+		file:      file,
+	}
+	return result
 }
 
 func (s *Storage) Add(shortURL, fullURL string) error {
@@ -34,7 +37,10 @@ func (s *Storage) Add(shortURL, fullURL string) error {
 		return ErrDuplicateValue
 	}
 	s.container[shortURL] = fullURL
-	s.file.WriteString(shortURL + " : " + fullURL)
+	if s.file != nil {
+		_, err := s.file.WriteString(shortURL + " : " + fullURL)
+		return err
+	}
 	return nil
 }
 

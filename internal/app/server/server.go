@@ -19,7 +19,7 @@ func StartServer() error {
 	r.Post("/", logging.WithLogging(handlers.Shortener))
 	r.Post("/api/shorten", logging.WithLogging(handlers.ShortenerJSON))
 	r.Get("/{short_url}", logging.WithLogging(handlers.Expander))
-	zerolog.SetGlobalLevel(zerolog.DebugLevel)
+	zerolog.SetGlobalLevel(config.LogLevel)
 	log.Println(config.ServerAddress)
 	err := http.ListenAndServe(config.ServerAddress, r)
 	return err

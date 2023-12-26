@@ -3,8 +3,9 @@ package handlers
 import (
 	"encoding/json"
 	"io"
-	"log"
 	"net/http"
+
+	"github.com/rs/zerolog/log"
 
 	"github.com/alexeyvilmost/urlshort.git/internal/app/config"
 	"github.com/alexeyvilmost/urlshort.git/internal/app/storage"
@@ -27,7 +28,7 @@ type Handlers struct {
 func NewHandlers(config *config.Config) *Handlers {
 	result := &Handlers{
 		BaseURL: config.BaseURL,
-		Storage: storage.NewStorage(),
+		Storage: storage.NewStorage(config.StorageFile),
 	}
 	return result
 }
@@ -39,15 +40,23 @@ func (h Handlers) Shorten(URL string) string {
 		shortURL = "/" + utils.GenerateShortKey()
 		err = h.Storage.Add(shortURL, URL)
 	}
+	if err != nil {
+		log.Error().Msg(err.Error())
+	}
 	return h.BaseURL + shortURL
 }
 
 func (h Handlers) ShortenerJSON(res http.ResponseWriter, req *http.Request) {
-	decoder := json.NewDecoder(req.Body)
-	var url Request
-	err := decoder.Decode(&url)
+	reader, err := utils.ReadCompressed(req)
 	if err != nil {
-		log.Println("Не удалось распарсить запрос: ", err)
+		http.Error(res, err.Error(), http.StatusInternalServerError)
+		return
+	}
+	decoder := json.NewDecoder(reader)
+	var url Request
+	err = decoder.Decode(&url)
+	if err != nil {
+		log.Info().Err(err).Msg("Не удалось распарсить запрос: ")
 		http.Error(res, "Не удалось распарсить запрос", http.StatusBadRequest)
 		return
 	}
@@ -58,9 +67,14 @@ func (h Handlers) ShortenerJSON(res http.ResponseWriter, req *http.Request) {
 }
 
 func (h Handlers) Shortener(res http.ResponseWriter, req *http.Request) {
-	fullURL, err := io.ReadAll(req.Body)
+	reader, err := utils.ReadCompressed(req)
 	if err != nil {
-		log.Println("Не удалось распарсить запрос: ", err)
+		http.Error(res, err.Error(), http.StatusInternalServerError)
+		return
+	}
+	fullURL, err := io.ReadAll(reader)
+	if err != nil {
+		log.Error().Err(err).Msg("Не удалось распарсить запрос: ")
 		http.Error(res, "Не удалось распарсить запрос", http.StatusBadRequest)
 		return
 	}

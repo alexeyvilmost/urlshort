@@ -1,0 +1,636 @@
+{
+  "Issues": [
+    {
+      "FromLinter": "wrapcheck",
+      "Text": "error returned from interface method should be wrapped: sig: func (io.Writer).Write(p []byte) (n int, err error)",
+      "Severity": "error",
+      "SourceLines": [
+        "\treturn w.Writer.Write(b)"
+      ],
+      "Replacement": null,
+      "Pos": {
+        "Filename": "internal/app/compressing/compressing.go",
+        "Offset": 205,
+        "Line": 16,
+        "Column": 9
+      },
+      "ExpectNoLint": false,
+      "ExpectedNoLintLinter": ""
+    },
+    {
+      "FromLinter": "whitespace",
+      "Text": "unnecessary leading newline",
+      "Severity": "error",
+      "SourceLines": [
+        "\t\tif !strings.Contains(r.Header.Get(\"Accept-Encoding\"), \"gzip\") {",
+        ""
+      ],
+      "Replacement": {
+        "NeedOnlyDelete": false,
+        "NewLines": [
+          "\t\tif !strings.Contains(r.Header.Get(\"Accept-Encoding\"), \"gzip\") {"
+        ],
+        "Inline": null
+      },
+      "LineRange": {
+        "From": 21,
+        "To": 22
+      },
+      "Pos": {
+        "Filename": "internal/app/compressing/compressing.go",
+        "Offset": 0,
+        "Line": 21,
+        "Column": 0
+      },
+      "ExpectNoLint": false,
+      "ExpectedNoLintLinter": ""
+    },
+    {
+      "FromLinter": "errcheck",
+      "Text": "Error return value of `io.WriteString` is not checked",
+      "Severity": "error",
+      "SourceLines": [
+        "\t\t\tio.WriteString(w, err.Error())"
+      ],
+      "Replacement": null,
+      "Pos": {
+        "Filename": "internal/app/compressing/compressing.go",
+        "Offset": 541,
+        "Line": 29,
+        "Column": 18
+      },
+      "ExpectNoLint": false,
+      "ExpectedNoLintLinter": ""
+    },
+    {
+      "FromLinter": "errcheck",
+      "Text": "Error return value of `gz.Close` is not checked",
+      "Severity": "error",
+      "SourceLines": [
+        "\t\tdefer gz.Close()"
+      ],
+      "Replacement": null,
+      "Pos": {
+        "Filename": "internal/app/compressing/compressing.go",
+        "Offset": 588,
+        "Line": 32,
+        "Column": 17
+      },
+      "ExpectNoLint": false,
+      "ExpectedNoLintLinter": ""
+    },
+    {
+      "FromLinter": "govet",
+      "Text": "fieldalignment: struct with 24 pointer bytes could be 16",
+      "Severity": "error",
+      "SourceLines": [
+        "type Handlers struct {"
+      ],
+      "Replacement": null,
+      "Pos": {
+        "Filename": "internal/app/handlers/handlers.go",
+        "Offset": 398,
+        "Line": 23,
+        "Column": 15
+      },
+      "ExpectNoLint": false,
+      "ExpectedNoLintLinter": ""
+    },
+    {
+      "FromLinter": "gocritic",
+      "Text": "captLocal: `URL' should not be capitalized",
+      "Severity": "error",
+      "SourceLines": [
+        "func (h Handlers) Shorten(URL string) string {"
+      ],
+      "Replacement": null,
+      "Pos": {
+        "Filename": "internal/app/handlers/handlers.go",
+        "Offset": 651,
+        "Line": 36,
+        "Column": 27
+      },
+      "ExpectNoLint": false,
+      "ExpectedNoLintLinter": ""
+    },
+    {
+      "FromLinter": "errorlint",
+      "Text": "comparing with == will fail on wrapped errors. Use errors.Is to check for a specific error",
+      "Severity": "error",
+      "SourceLines": [
+        "\tfor err == storage.ErrDuplicateValue {"
+      ],
+      "Replacement": null,
+      "Pos": {
+        "Filename": "internal/app/handlers/handlers.go",
+        "Offset": 758,
+        "Line": 39,
+        "Column": 6
+      },
+      "ExpectNoLint": false,
+      "ExpectedNoLintLinter": ""
+    },
+    {
+      "FromLinter": "errcheck",
+      "Text": "Error return value of `(*encoding/json.Encoder).Encode` is not checked",
+      "Severity": "error",
+      "SourceLines": [
+        "\tjson.NewEncoder(res).Encode(result)"
+      ],
+      "Replacement": null,
+      "Pos": {
+        "Filename": "internal/app/handlers/handlers.go",
+        "Offset": 1630,
+        "Line": 66,
+        "Column": 29
+      },
+      "ExpectNoLint": false,
+      "ExpectedNoLintLinter": ""
+    },
+    {
+      "FromLinter": "errcheck",
+      "Text": "Error return value of `io.WriteString` is not checked",
+      "Severity": "error",
+      "SourceLines": [
+        "\tio.WriteString(res, h.Shorten(string(fullURL)))"
+      ],
+      "Replacement": null,
+      "Pos": {
+        "Filename": "internal/app/handlers/handlers.go",
+        "Offset": 2151,
+        "Line": 82,
+        "Column": 16
+      },
+      "ExpectNoLint": false,
+      "ExpectedNoLintLinter": ""
+    },
+    {
+      "FromLinter": "wrapcheck",
+      "Text": "error returned from interface method should be wrapped: sig: func (net/http.ResponseWriter).Write([]byte) (int, error)",
+      "Severity": "error",
+      "SourceLines": [
+        "\treturn size, err"
+      ],
+      "Replacement": null,
+      "Pos": {
+        "Filename": "internal/app/logging/logging.go",
+        "Offset": 374,
+        "Line": 25,
+        "Column": 15
+      },
+      "ExpectNoLint": false,
+      "ExpectedNoLintLinter": ""
+    },
+    {
+      "FromLinter": "wrapcheck",
+      "Text": "error returned from external package is unwrapped: sig: func net/http.ListenAndServe(addr string, handler net/http.Handler) error",
+      "Severity": "error",
+      "SourceLines": [
+        "\treturn err"
+      ],
+      "Replacement": null,
+      "Pos": {
+        "Filename": "internal/app/server/server.go",
+        "Offset": 687,
+        "Line": 23,
+        "Column": 9
+      },
+      "ExpectNoLint": false,
+      "ExpectedNoLintLinter": ""
+    },
+    {
+      "FromLinter": "wrapcheck",
+      "Text": "error returned from external package is unwrapped: sig: func (*os.File).WriteString(s string) (n int, err error)",
+      "Severity": "error",
+      "SourceLines": [
+        "\t\treturn err"
+      ],
+      "Replacement": null,
+      "Pos": {
+        "Filename": "internal/app/storage/storage.go",
+        "Offset": 813,
+        "Line": 42,
+        "Column": 10
+      },
+      "ExpectNoLint": false,
+      "ExpectedNoLintLinter": ""
+    },
+    {
+      "FromLinter": "wrapcheck",
+      "Text": "error returned from external package is unwrapped: sig: func compress/gzip.NewReader(r io.Reader) (*compress/gzip.Reader, error)",
+      "Severity": "error",
+      "SourceLines": [
+        "\t\t\treturn nil, err"
+      ],
+      "Replacement": null,
+      "Pos": {
+        "Filename": "internal/app/utils/utils.go",
+        "Offset": 561,
+        "Line": 27,
+        "Column": 16
+      },
+      "ExpectNoLint": false,
+      "ExpectedNoLintLinter": ""
+    },
+    {
+      "FromLinter": "errcheck",
+      "Text": "Error return value of `gz.Close` is not checked",
+      "Severity": "error",
+      "SourceLines": [
+        "\t\tdefer gz.Close()"
+      ],
+      "Replacement": null,
+      "Pos": {
+        "Filename": "internal/app/utils/utils.go",
+        "Offset": 599,
+        "Line": 30,
+        "Column": 17
+      },
+      "ExpectNoLint": false,
+      "ExpectedNoLintLinter": ""
+    }
+  ],
+  "Report": {
+    "Linters": [
+      {
+        "Name": "asasalint",
+        "Enabled": true
+      },
+      {
+        "Name": "asciicheck",
+        "Enabled": true
+      },
+      {
+        "Name": "bidichk"
+      },
+      {
+        "Name": "bodyclose",
+        "Enabled": true
+      },
+      {
+        "Name": "containedctx",
+        "Enabled": true
+      },
+      {
+        "Name": "contextcheck"
+      },
+      {
+        "Name": "cyclop"
+      },
+      {
+        "Name": "decorder"
+      },
+      {
+        "Name": "deadcode"
+      },
+      {
+        "Name": "depguard"
+      },
+      {
+        "Name": "dogsled"
+      },
+      {
+        "Name": "dupl",
+        "Enabled": true
+      },
+      {
+        "Name": "dupword",
+        "Enabled": true
+      },
+      {
+        "Name": "durationcheck",
+        "Enabled": true
+      },
+      {
+        "Name": "errcheck",
+        "Enabled": true,
+        "EnabledByDefault": true
+      },
+      {
+        "Name": "errchkjson"
+      },
+      {
+        "Name": "errname",
+        "Enabled": true
+      },
+      {
+        "Name": "errorlint",
+        "Enabled": true
+      },
+      {
+        "Name": "execinquery",
+        "Enabled": true
+      },
+      {
+        "Name": "exhaustive",
+        "Enabled": true
+      },
+      {
+        "Name": "exhaustivestruct"
+      },
+      {
+        "Name": "exhaustruct"
+      },
+      {
+        "Name": "exportloopref"
+      },
+      {
+        "Name": "forbidigo"
+      },
+      {
+        "Name": "forcetypeassert"
+      },
+      {
+        "Name": "funlen"
+      },
+      {
+        "Name": "gci"
+      },
+      {
+        "Name": "ginkgolinter"
+      },
+      {
+        "Name": "gocheckcompilerdirectives",
+        "Enabled": true
+      },
+      {
+        "Name": "gochecknoglobals"
+      },
+      {
+        "Name": "gochecknoinits"
+      },
+      {
+        "Name": "gocognit"
+      },
+      {
+        "Name": "goconst",
+        "Enabled": true
+      },
+      {
+        "Name": "gocritic",
+        "Enabled": true
+      },
+      {
+        "Name": "gocyclo"
+      },
+      {
+        "Name": "godot",
+        "Enabled": true
+      },
+      {
+        "Name": "godox"
+      },
+      {
+        "Name": "goerr113"
+      },
+      {
+        "Name": "gofmt",
+        "Enabled": true
+      },
+      {
+        "Name": "gofumpt"
+      },
+      {
+        "Name": "goheader"
+      },
+      {
+        "Name": "goimports",
+        "Enabled": true
+      },
+      {
+        "Name": "golint"
+      },
+      {
+        "Name": "gomnd",
+        "Enabled": true
+      },
+      {
+        "Name": "gomoddirectives"
+      },
+      {
+        "Name": "gomodguard"
+      },
+      {
+        "Name": "goprintffuncname",
+        "Enabled": true
+      },
+      {
+        "Name": "gosec",
+        "Enabled": true
+      },
+      {
+        "Name": "gosimple",
+        "Enabled": true,
+        "EnabledByDefault": true
+      },
+      {
+        "Name": "gosmopolitan"
+      },
+      {
+        "Name": "govet",
+        "Enabled": true,
+        "EnabledByDefault": true
+      },
+      {
+        "Name": "grouper",
+        "Enabled": true
+      },
+      {
+        "Name": "ifshort"
+      },
+      {
+        "Name": "importas"
+      },
+      {
+        "Name": "ineffassign",
+        "Enabled": true,
+        "EnabledByDefault": true
+      },
+      {
+        "Name": "interfacebloat"
+      },
+      {
+        "Name": "interfacer"
+      },
+      {
+        "Name": "ireturn"
+      },
+      {
+        "Name": "lll",
+        "Enabled": true
+      },
+      {
+        "Name": "loggercheck"
+      },
+      {
+        "Name": "maintidx"
+      },
+      {
+        "Name": "makezero",
+        "Enabled": true
+      },
+      {
+        "Name": "maligned"
+      },
+      {
+        "Name": "mirror"
+      },
+      {
+        "Name": "misspell"
+      },
+      {
+        "Name": "musttag"
+      },
+      {
+        "Name": "nakedret"
+      },
+      {
+        "Name": "nestif"
+      },
+      {
+        "Name": "nilerr",
+        "Enabled": true
+      },
+      {
+        "Name": "nilnil",
+        "Enabled": true
+      },
+      {
+        "Name": "nlreturn"
+      },
+      {
+        "Name": "noctx"
+      },
+      {
+        "Name": "nonamedreturns"
+      },
+      {
+        "Name": "nosnakecase"
+      },
+      {
+        "Name": "nosprintfhostport",
+        "Enabled": true
+      },
+      {
+        "Name": "paralleltest"
+      },
+      {
+        "Name": "prealloc",
+        "Enabled": true
+      },
+      {
+        "Name": "predeclared",
+        "Enabled": true
+      },
+      {
+        "Name": "promlinter"
+      },
+      {
+        "Name": "reassign",
+        "Enabled": true
+      },
+      {
+        "Name": "revive",
+        "Enabled": true
+      },
+      {
+        "Name": "rowserrcheck",
+        "Enabled": true
+      },
+      {
+        "Name": "scopelint"
+      },
+      {
+        "Name": "sqlclosecheck",
+        "Enabled": true
+      },
+      {
+        "Name": "staticcheck",
+        "Enabled": true,
+        "EnabledByDefault": true
+      },
+      {
+        "Name": "structcheck"
+      },
+      {
+        "Name": "stylecheck",
+        "Enabled": true
+      },
+      {
+        "Name": "tagalign"
+      },
+      {
+        "Name": "tagliatelle"
+      },
+      {
+        "Name": "tenv",
+        "Enabled": true
+      },
+      {
+        "Name": "testableexamples",
+        "Enabled": true
+      },
+      {
+        "Name": "testpackage"
+      },
+      {
+        "Name": "thelper",
+        "Enabled": true
+      },
+      {
+        "Name": "tparallel",
+        "Enabled": true
+      },
+      {
+        "Name": "typecheck",
+        "Enabled": true,
+        "EnabledByDefault": true
+      },
+      {
+        "Name": "unconvert",
+        "Enabled": true
+      },
+      {
+        "Name": "unparam",
+        "Enabled": true
+      },
+      {
+        "Name": "unused",
+        "Enabled": true,
+        "EnabledByDefault": true
+      },
+      {
+        "Name": "usestdlibvars",
+        "Enabled": true
+      },
+      {
+        "Name": "varcheck"
+      },
+      {
+        "Name": "varnamelen"
+      },
+      {
+        "Name": "wastedassign",
+        "Enabled": true
+      },
+      {
+        "Name": "whitespace",
+        "Enabled": true
+      },
+      {
+        "Name": "wrapcheck",
+        "Enabled": true
+      },
+      {
+        "Name": "wsl"
+      },
+      {
+        "Name": "nolintlint",
+        "Enabled": true
+      },
+      {
+        "Name": "zerologlint"
+      }
+    ]
+  }
+}

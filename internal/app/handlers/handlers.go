@@ -2,6 +2,7 @@ package handlers
 
 import (
 	"encoding/json"
+	"fmt"
 	"io"
 	"net/http"
 
@@ -33,7 +34,7 @@ func NewHandlers(config *config.Config) *Handlers {
 	return result
 }
 
-func (h Handlers) Shorten(URL string) string {
+func (h Handlers) Shorten(URL string) (string, error) {
 	shortURL := "/" + utils.GenerateShortKey()
 	err := h.Storage.Add(shortURL, URL)
 	for err == storage.ErrDuplicateValue {
@@ -41,45 +42,45 @@ func (h Handlers) Shorten(URL string) string {
 		err = h.Storage.Add(shortURL, URL)
 	}
 	if err != nil {
-		log.Error().Msg(err.Error())
+		return "", fmt.Errorf("Failed to add new key-value pair in storage: %w", err)
 	}
-	return h.BaseURL + shortURL
+	return h.BaseURL + shortURL, nil
 }
 
 func (h Handlers) ShortenerJSON(res http.ResponseWriter, req *http.Request) {
-	reader, err := utils.ReadCompressed(req)
-	if err != nil {
-		http.Error(res, err.Error(), http.StatusInternalServerError)
-		return
-	}
-	decoder := json.NewDecoder(reader)
+	decoder := json.NewDecoder(req.Body)
 	var url Request
-	err = decoder.Decode(&url)
+	err := decoder.Decode(&url)
 	if err != nil {
 		log.Info().Err(err).Msg("Не удалось распарсить запрос: ")
 		http.Error(res, "Не удалось распарсить запрос", http.StatusBadRequest)
 		return
 	}
+	str, err := h.Shorten(url.URL)
+	if err != nil {
+		res.WriteHeader(http.StatusInternalServerError)
+		return
+	}
 	res.Header().Add("Content-Type", "application/json")
 	res.WriteHeader(http.StatusCreated)
-	result := Result{Result: h.Shorten(url.URL)}
+	result := Result{Result: str}
 	json.NewEncoder(res).Encode(result)
 }
 
 func (h Handlers) Shortener(res http.ResponseWriter, req *http.Request) {
-	reader, err := utils.ReadCompressed(req)
-	if err != nil {
-		http.Error(res, err.Error(), http.StatusInternalServerError)
-		return
-	}
-	fullURL, err := io.ReadAll(reader)
+	fullURL, err := io.ReadAll(req.Body)
 	if err != nil {
 		log.Error().Err(err).Msg("Не удалось распарсить запрос: ")
 		http.Error(res, "Не удалось распарсить запрос", http.StatusBadRequest)
 		return
 	}
+	str, err := h.Shorten(string(fullURL))
+	if err != nil {
+		res.WriteHeader(http.StatusInternalServerError)
+		return
+	}
 	res.WriteHeader(http.StatusCreated)
-	io.WriteString(res, h.Shorten(string(fullURL)))
+	io.WriteString(res, str)
 }
 
 func (h Handlers) Expander(res http.ResponseWriter, req *http.Request) {

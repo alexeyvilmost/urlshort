@@ -28,4 +28,13 @@ _golangci-lint-rm-unformatted-report: _golangci-lint-format-report
 
 .PHONY: golangci-lint-clean
 golangci-lint-clean:
-	sudo rm -rf ./golangci-lint 
+	sudo rm -rf ./golangci-lint
+
+.PHONY: test-%
+test-%:
+	/Users/a.vilgelm/path/shortenertestbeta \
+	-test.v -test.run=^TestIteration$*$$ \
+	-source-path=. \
+	-binary-path=cmd/shortener/shortener \
+    -file-storage-path=/Users/a.vilgelm/study/urlshortener/urlshort/cmd/shortener/storDage.txt \
+	-server-port=8080

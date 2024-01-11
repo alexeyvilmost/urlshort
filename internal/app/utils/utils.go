@@ -1,10 +1,7 @@
 package utils
 
 import (
-	"compress/gzip"
-	"io"
 	"math/rand"
-	"net/http"
 )
 
 func GenerateShortKey() string {
@@ -17,19 +14,4 @@ func GenerateShortKey() string {
 	}
 
 	return string(shortKey)
-}
-
-func ReadCompressed(req *http.Request) (io.Reader, error) {
-	var reader io.Reader
-	if req.Header.Get("Content-Encoding") == "gzip" {
-		gz, err := gzip.NewReader(req.Body)
-		if err != nil {
-			return nil, err
-		}
-		reader = gz
-		defer gz.Close()
-	} else {
-		reader = req.Body
-	}
-	return reader, nil
 }

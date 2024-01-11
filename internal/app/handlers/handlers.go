@@ -26,12 +26,16 @@ type Handlers struct {
 	Storage *storage.Storage
 }
 
-func NewHandlers(config *config.Config) *Handlers {
+func NewHandlers(config *config.Config) (*Handlers, error) {
+	storage, err := storage.NewStorage(config.StorageFile)
+	if err != nil {
+		return &Handlers{}, fmt.Errorf("failed to create storage: %w", err)
+	}
 	result := &Handlers{
 		BaseURL: config.BaseURL,
-		Storage: storage.NewStorage(config.StorageFile),
+		Storage: storage,
 	}
-	return result
+	return result, nil
 }
 
 func (h Handlers) Shorten(URL string) (string, error) {

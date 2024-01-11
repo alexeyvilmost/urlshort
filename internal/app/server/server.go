@@ -1,6 +1,7 @@
 package server
 
 import (
+	"fmt"
 	"net/http"
 
 	"github.com/alexeyvilmost/urlshort.git/internal/app/compressing"
@@ -13,7 +14,10 @@ import (
 
 func StartServer() error {
 	config := config.NewConfig()
-	handlers := handlers.NewHandlers(config)
+	handlers, err := handlers.NewHandlers(config)
+	if err != nil {
+		return fmt.Errorf("failed to create handlers: %w", err)
+	}
 
 	r := chi.NewRouter()
 	r.Use(compressing.WithCompress, logging.WithLogging)
@@ -21,6 +25,6 @@ func StartServer() error {
 	r.Post("/api/shorten", handlers.ShortenerJSON)
 	r.Get("/{short_url}", handlers.Expander)
 	zerolog.SetGlobalLevel(config.LogLevel)
-	err := http.ListenAndServe(config.ServerAddress, r)
+	err = http.ListenAndServe(config.ServerAddress, r)
 	return err
 }

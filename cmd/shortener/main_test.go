@@ -10,6 +10,7 @@ import (
 	"github.com/alexeyvilmost/urlshort.git/internal/app/handlers"
 	"github.com/go-resty/resty/v2"
 	"github.com/stretchr/testify/assert"
+	"github.com/stretchr/testify/require"
 )
 
 func Test_happypath(t *testing.T) {
@@ -18,7 +19,8 @@ func Test_happypath(t *testing.T) {
 		BaseURL:       "http://localhost:8080",
 		StorageFile:   "storage.txt",
 	}
-	h := handlers.NewHandlers(config)
+	h, err := handlers.NewHandlers(config)
+	require.NoError(t, err)
 	handler := http.HandlerFunc(h.Shortener)
 
 	srv := httptest.NewServer(handler)

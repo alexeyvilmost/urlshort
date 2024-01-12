@@ -2,9 +2,12 @@ package handlers
 
 import (
 	"encoding/json"
+	"errors"
+	"fmt"
 	"io"
-	"log"
 	"net/http"
+
+	"github.com/rs/zerolog/log"
 
 	"github.com/alexeyvilmost/urlshort.git/internal/app/config"
 	"github.com/alexeyvilmost/urlshort.git/internal/app/storage"
@@ -24,22 +27,29 @@ type Handlers struct {
 	Storage *storage.Storage
 }
 
-func NewHandlers(config *config.Config) *Handlers {
+func NewHandlers(config *config.Config) (*Handlers, error) {
+	storage, err := storage.NewStorage(config.StorageFile)
+	if err != nil {
+		return &Handlers{}, fmt.Errorf("failed to create storage: %w", err)
+	}
 	result := &Handlers{
 		BaseURL: config.BaseURL,
-		Storage: storage.NewStorage(),
+		Storage: storage,
 	}
-	return result
+	return result, nil
 }
 
-func (h Handlers) Shorten(URL string) string {
+func (h Handlers) Shorten(URL string) (string, error) {
 	shortURL := "/" + utils.GenerateShortKey()
 	err := h.Storage.Add(shortURL, URL)
-	for err == storage.ErrDuplicateValue {
+	for errors.Is(err, storage.ErrDuplicateValue) {
 		shortURL = "/" + utils.GenerateShortKey()
 		err = h.Storage.Add(shortURL, URL)
 	}
-	return h.BaseURL + shortURL
+	if err != nil {
+		return "", fmt.Errorf("failed to add new key-value pair in storage: %w", err)
+	}
+	return h.BaseURL + shortURL, nil
 }
 
 func (h Handlers) ShortenerJSON(res http.ResponseWriter, req *http.Request) {
@@ -47,25 +57,35 @@ func (h Handlers) ShortenerJSON(res http.ResponseWriter, req *http.Request) {
 	var url Request
 	err := decoder.Decode(&url)
 	if err != nil {
-		log.Println("Не удалось распарсить запрос: ", err)
+		log.Info().Err(err).Msg("Не удалось распарсить запрос: ")
 		http.Error(res, "Не удалось распарсить запрос", http.StatusBadRequest)
+		return
+	}
+	str, err := h.Shorten(url.URL)
+	if err != nil {
+		res.WriteHeader(http.StatusInternalServerError)
 		return
 	}
 	res.Header().Add("Content-Type", "application/json")
 	res.WriteHeader(http.StatusCreated)
-	result := Result{Result: h.Shorten(url.URL)}
+	result := Result{Result: str}
 	json.NewEncoder(res).Encode(result)
 }
 
 func (h Handlers) Shortener(res http.ResponseWriter, req *http.Request) {
 	fullURL, err := io.ReadAll(req.Body)
 	if err != nil {
-		log.Println("Не удалось распарсить запрос: ", err)
+		log.Error().Err(err).Msg("Не удалось распарсить запрос: ")
 		http.Error(res, "Не удалось распарсить запрос", http.StatusBadRequest)
 		return
 	}
+	str, err := h.Shorten(string(fullURL))
+	if err != nil {
+		res.WriteHeader(http.StatusInternalServerError)
+		return
+	}
 	res.WriteHeader(http.StatusCreated)
-	io.WriteString(res, h.Shorten(string(fullURL)))
+	io.WriteString(res, str)
 }
 
 func (h Handlers) Expander(res http.ResponseWriter, req *http.Request) {

@@ -38,3 +38,12 @@ test-%:
 	-binary-path=cmd/shortener/shortener \
     -file-storage-path=/Users/a.vilgelm/study/urlshortener/urlshort/cmd/shortener/storDage.txt \
 	-server-port=8080
+
+test-full-%:
+	go build * -o shortener
+	/Users/a.vilgelm/path/shortenertestbeta \
+	-test.v -test.run=^TestIteration$*$$ \
+	-source-path=. \
+	-binary-path=shortener \
+    -file-storage-path=/Users/a.vilgelm/study/urlshortener/urlshort/cmd/shortener/storDage.txt \
+	-server-port=8080

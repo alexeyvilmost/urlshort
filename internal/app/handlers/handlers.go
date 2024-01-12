@@ -2,6 +2,7 @@ package handlers
 
 import (
 	"encoding/json"
+	"errors"
 	"fmt"
 	"io"
 	"net/http"
@@ -41,7 +42,7 @@ func NewHandlers(config *config.Config) (*Handlers, error) {
 func (h Handlers) Shorten(URL string) (string, error) {
 	shortURL := "/" + utils.GenerateShortKey()
 	err := h.Storage.Add(shortURL, URL)
-	for err == storage.ErrDuplicateValue {
+	for errors.Is(err, storage.ErrDuplicateValue) {
 		shortURL = "/" + utils.GenerateShortKey()
 		err = h.Storage.Add(shortURL, URL)
 	}

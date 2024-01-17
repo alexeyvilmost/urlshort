@@ -12,6 +12,7 @@ type Config struct {
 	BaseURL       string
 	StorageFile   string
 	LogLevel      zerolog.Level
+	DBString      string
 }
 
 func NewConfig() *Config {
@@ -20,6 +21,8 @@ func NewConfig() *Config {
 	resultPtr := flag.String("b", "http://localhost:8080", "Result host adress")
 	StorageFile := flag.String("f", "storage.txt", "Storage filename")
 	LogLevel := flag.String("l", "d", "Log level: 'd' for debug, 'i' for info, 'w' for warn and 'e' for error")
+	DBString := flag.String("d", "port=5232 user=a.vilgelm dbname=a.vilgelm sslmode=disable host=localhost", "Connection string for DB")
+
 	flag.Parse()
 	var ok bool
 	result.ServerAddress, ok = os.LookupEnv("SERVER_ADDRESS")
@@ -33,6 +36,10 @@ func NewConfig() *Config {
 	result.StorageFile, ok = os.LookupEnv("FILE_STORAGE_PATH")
 	if !ok {
 		result.StorageFile = *StorageFile
+	}
+	result.DBString, ok = os.LookupEnv("DATABASE_DSN")
+	if !ok {
+		result.DBString = *DBString
 	}
 	switch *LogLevel {
 	case "d":

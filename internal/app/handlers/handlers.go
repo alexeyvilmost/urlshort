@@ -28,7 +28,7 @@ type Handlers struct {
 }
 
 func NewHandlers(config *config.Config) (*Handlers, error) {
-	storage, err := storage.NewStorage(config.StorageFile)
+	storage, err := storage.NewStorage(config)
 	if err != nil {
 		return &Handlers{}, fmt.Errorf("failed to create storage: %w", err)
 	}
@@ -97,4 +97,13 @@ func (h Handlers) Expander(res http.ResponseWriter, req *http.Request) {
 	res.Header().Set("Location", fullURL)
 	res.Header().Set("Content-Type", "application/json")
 	res.WriteHeader(http.StatusTemporaryRedirect)
+}
+
+func (h Handlers) Ping(res http.ResponseWriter, req *http.Request) {
+	ok := h.Storage.CheckDBConn()
+	if !ok {
+		http.Error(res, "Соединение с БД отсутствует", http.StatusBadRequest)
+		return
+	}
+	res.WriteHeader(http.StatusOK)
 }

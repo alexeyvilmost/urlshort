@@ -40,6 +40,7 @@ test-%:
 	-server-port=8080
 
 test-full-%:
+	cd cmd/shortener/
 	go build * -o shortener
 	/Users/a.vilgelm/path/shortenertestbeta \
 	-test.v -test.run=^TestIteration$*$$ \

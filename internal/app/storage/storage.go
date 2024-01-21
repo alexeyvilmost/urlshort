@@ -9,6 +9,7 @@ import (
 	"github.com/alexeyvilmost/urlshort.git/internal/app/config"
 	"github.com/go-errors/errors"
 	pgerrcode "github.com/jackc/pgerrcode"
+	_ "github.com/jackc/pgx/v5/stdlib"
 	pq "github.com/lib/pq"
 	"github.com/rs/zerolog/log"
 )
@@ -130,6 +131,7 @@ func (s *Storage) Add(shortURL, fullURL string) (string, error) {
 	switch s.mode {
 	case LocalMode:
 		s.container[shortURL] = fullURL
+		return "", nil
 	case FileMode:
 		writer := csv.NewWriter(s.file)
 		defer writer.Flush()
@@ -138,6 +140,7 @@ func (s *Storage) Add(shortURL, fullURL string) (string, error) {
 			log.Error().Err(err).Msg("failed to write in file")
 			return "", err
 		}
+		return "", nil
 	case DBMode:
 		db, err := sql.Open("pgx", s.DBString)
 		if err != nil {
@@ -163,6 +166,7 @@ func (s *Storage) Add(shortURL, fullURL string) (string, error) {
 			log.Error().Err(err).Msg("failed to insert value in db")
 			return "", err
 		}
+		return "", nil
 	}
 	log.Error().Msg("unsupported storage mode")
 	return "", nil

@@ -22,6 +22,16 @@ type Request struct {
 	URL string `json:"url"`
 }
 
+type UrlData struct {
+	CorrelationID string `json:"correlation_id"`
+	OriginalURL   string `json:"original_url"`
+}
+
+type UrlResponse struct {
+	CorrelationID string `json:"correlation_id"`
+	ShortURL      string `json:"short_url"`
+}
+
 type Handlers struct {
 	BaseURL string
 	Storage *storage.Storage
@@ -41,10 +51,13 @@ func NewHandlers(config *config.Config) (*Handlers, error) {
 
 func (h Handlers) Shorten(URL string) (string, error) {
 	shortURL := "/" + utils.GenerateShortKey()
-	err := h.Storage.Add(shortURL, URL)
+	str, err := h.Storage.Add(shortURL, URL)
 	for errors.Is(err, storage.ErrDuplicateValue) {
 		shortURL = "/" + utils.GenerateShortKey()
-		err = h.Storage.Add(shortURL, URL)
+		str, err = h.Storage.Add(shortURL, URL)
+	}
+	if errors.Is(err, storage.ErrExistingFullURL) {
+		return str, err
 	}
 	if err != nil {
 		return "", fmt.Errorf("failed to add new key-value pair in storage: %w", err)
@@ -62,6 +75,13 @@ func (h Handlers) ShortenerJSON(res http.ResponseWriter, req *http.Request) {
 		return
 	}
 	str, err := h.Shorten(url.URL)
+	if errors.Is(err, storage.ErrExistingFullURL) {
+		res.Header().Add("Content-Type", "application/json")
+		res.WriteHeader(http.StatusConflict)
+		result := Result{Result: str}
+		json.NewEncoder(res).Encode(result)
+		return
+	}
 	if err != nil {
 		res.WriteHeader(http.StatusInternalServerError)
 		return
@@ -72,6 +92,29 @@ func (h Handlers) ShortenerJSON(res http.ResponseWriter, req *http.Request) {
 	json.NewEncoder(res).Encode(result)
 }
 
+func (h Handlers) ShortenBatch(res http.ResponseWriter, req *http.Request) {
+	decoder := json.NewDecoder(req.Body)
+	var urlDataList []UrlData
+	var urlResponseList []UrlResponse
+	err := decoder.Decode(&urlDataList)
+	if err != nil {
+		log.Info().Err(err).Msg("Не удалось распарсить запрос: ")
+		http.Error(res, "Не удалось распарсить запрос", http.StatusBadRequest)
+		return
+	}
+	for _, data := range urlDataList {
+		str, err := h.Shorten(data.OriginalURL)
+		if err != nil {
+			res.WriteHeader(http.StatusInternalServerError)
+			return
+		}
+		urlResponseList = append(urlResponseList, UrlResponse{CorrelationID: data.CorrelationID, ShortURL: str})
+	}
+	res.Header().Add("Content-Type", "application/json")
+	res.WriteHeader(http.StatusCreated)
+	json.NewEncoder(res).Encode(urlResponseList)
+}
+
 func (h Handlers) Shortener(res http.ResponseWriter, req *http.Request) {
 	fullURL, err := io.ReadAll(req.Body)
 	if err != nil {
@@ -80,6 +123,11 @@ func (h Handlers) Shortener(res http.ResponseWriter, req *http.Request) {
 		return
 	}
 	str, err := h.Shorten(string(fullURL))
+	if errors.Is(err, storage.ErrExistingFullURL) {
+		res.WriteHeader(http.StatusConflict)
+		io.WriteString(res, str)
+		return
+	}
 	if err != nil {
 		res.WriteHeader(http.StatusInternalServerError)
 		return

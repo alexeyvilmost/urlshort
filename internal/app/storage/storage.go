@@ -18,22 +18,24 @@ var ErrDuplicateValue = errors.New("Addition attempt failed: key value already e
 var ErrExistingFullURL = errors.New("Addition attempt failed: full url already exists")
 
 const (
-	LocalMode int = iota
-	FileMode
-	DBMode
+	LocalMode string = "Local"
+	FileMode         = "File"
+	DBMode           = "DB"
 )
 
 type Storage struct {
 	container map[string]string
-	file      *os.File
+	filename  string
 	DBString  string
-	mode      int
+	mode      string
 }
 
 func NewStorage(config *config.Config) (*Storage, error) {
 	var file *os.File
 	var err error
-	var mode int
+	var mode string
+	log.Debug().Msg("ConnString: " + config.DBString)
+	log.Debug().Msg("FileString: " + config.StorageFile)
 	if len(config.DBString) != 0 {
 		db, err := sql.Open("pgx", config.DBString)
 		if err != nil {
@@ -54,6 +56,7 @@ func NewStorage(config *config.Config) (*Storage, error) {
 		if err != nil {
 			return &Storage{}, fmt.Errorf("failed to create file for storage: %w", err)
 		}
+		defer file.Close()
 		mode = FileMode
 	} else {
 		mode = LocalMode
@@ -61,10 +64,11 @@ func NewStorage(config *config.Config) (*Storage, error) {
 
 	result := &Storage{
 		container: map[string]string{},
-		file:      file,
+		filename:  config.StorageFile,
 		DBString:  config.DBString,
 		mode:      mode,
 	}
+	log.Debug().Msg("Choosen mode: " + mode)
 	return result, nil
 }
 
@@ -87,7 +91,13 @@ func (s *Storage) Get(shortURL string) (string, bool) {
 		result, ok := s.container[shortURL]
 		return result, ok
 	case FileMode:
-		reader := csv.NewReader(s.file)
+		file, err := os.Open(s.filename)
+		if err != nil {
+			log.Error().Err(err).Msg("failed to open file")
+			return "", false
+		}
+		defer file.Close()
+		reader := csv.NewReader(file)
 		records, err := reader.ReadAll()
 		if err != nil {
 			log.Error().Err(err).Msg("failed to read file")
@@ -95,6 +105,7 @@ func (s *Storage) Get(shortURL string) (string, bool) {
 		}
 		for _, record := range records {
 			short := record[0]
+			log.Info().Msg("Searching for " + shortURL + ", checking " + short)
 			if short == shortURL {
 				full := record[1]
 				return full, true
@@ -133,9 +144,16 @@ func (s *Storage) Add(shortURL, fullURL string) (string, error) {
 		s.container[shortURL] = fullURL
 		return "", nil
 	case FileMode:
-		writer := csv.NewWriter(s.file)
+		file, err := os.OpenFile(s.filename, os.O_WRONLY, 0666)
+		if err != nil {
+			log.Error().Err(err).Msg("failed to open file")
+			return "", err
+		}
+		defer file.Close()
+		writer := csv.NewWriter(file)
 		defer writer.Flush()
-		err := writer.Write([]string{shortURL, fullURL})
+		err = writer.Write([]string{shortURL, fullURL})
+		log.Info().Msg("data written: " + shortURL + ", " + fullURL)
 		if err != nil {
 			log.Error().Err(err).Msg("failed to write in file")
 			return "", err

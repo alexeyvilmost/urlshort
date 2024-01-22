@@ -137,6 +137,7 @@ func (h Handlers) Shortener(res http.ResponseWriter, req *http.Request) {
 }
 
 func (h Handlers) Expander(res http.ResponseWriter, req *http.Request) {
+	log.Info().Msg(req.URL.Path)
 	fullURL, ok := h.Storage.Get(req.URL.Path)
 	if !ok {
 		http.Error(res, "Такой ссылки нет", http.StatusBadRequest)

@@ -11,8 +11,8 @@ type Config struct {
 	ServerAddress string
 	BaseURL       string
 	StorageFile   string
-	LogLevel      zerolog.Level
 	DBString      string
+	LogLevel      zerolog.Level
 }
 
 func NewConfig() *Config {

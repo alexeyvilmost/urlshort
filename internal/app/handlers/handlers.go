@@ -22,19 +22,19 @@ type Request struct {
 	URL string `json:"url"`
 }
 
-type UrlData struct {
+type URLData struct {
 	CorrelationID string `json:"correlation_id"`
 	OriginalURL   string `json:"original_url"`
 }
 
-type UrlResponse struct {
+type URLResponse struct {
 	CorrelationID string `json:"correlation_id"`
 	ShortURL      string `json:"short_url"`
 }
 
 type Handlers struct {
-	BaseURL string
 	Storage *storage.Storage
+	BaseURL string
 }
 
 func NewHandlers(config *config.Config) (*Handlers, error) {
@@ -94,8 +94,8 @@ func (h Handlers) ShortenerJSON(res http.ResponseWriter, req *http.Request) {
 
 func (h Handlers) ShortenBatch(res http.ResponseWriter, req *http.Request) {
 	decoder := json.NewDecoder(req.Body)
-	var urlDataList []UrlData
-	var urlResponseList []UrlResponse
+	var urlDataList []URLData
+	var urlResponseList []URLResponse
 	err := decoder.Decode(&urlDataList)
 	if err != nil {
 		log.Info().Err(err).Msg("Не удалось распарсить запрос: ")
@@ -108,7 +108,7 @@ func (h Handlers) ShortenBatch(res http.ResponseWriter, req *http.Request) {
 			res.WriteHeader(http.StatusInternalServerError)
 			return
 		}
-		urlResponseList = append(urlResponseList, UrlResponse{CorrelationID: data.CorrelationID, ShortURL: str})
+		urlResponseList = append(urlResponseList, URLResponse{CorrelationID: data.CorrelationID, ShortURL: str})
 	}
 	res.Header().Add("Content-Type", "application/json")
 	res.WriteHeader(http.StatusCreated)

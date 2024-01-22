@@ -18,29 +18,35 @@
       "ExpectedNoLintLinter": ""
     },
     {
-      "FromLinter": "whitespace",
-      "Text": "unnecessary leading newline",
+      "FromLinter": "errcheck",
+      "Text": "Error return value of `io.WriteString` is not checked",
       "Severity": "error",
       "SourceLines": [
-        "\t\tif !strings.Contains(r.Header.Get(\"Accept-Encoding\"), \"gzip\") {",
-        ""
+        "\t\t\t\tio.WriteString(w, err.Error())"
       ],
-      "Replacement": {
-        "NeedOnlyDelete": false,
-        "NewLines": [
-          "\t\tif !strings.Contains(r.Header.Get(\"Accept-Encoding\"), \"gzip\") {"
-        ],
-        "Inline": null
-      },
-      "LineRange": {
-        "From": 21,
-        "To": 22
-      },
+      "Replacement": null,
       "Pos": {
         "Filename": "internal/app/compressing/compressing.go",
-        "Offset": 0,
-        "Line": 21,
-        "Column": 0
+        "Offset": 498,
+        "Line": 26,
+        "Column": 19
+      },
+      "ExpectNoLint": false,
+      "ExpectedNoLintLinter": ""
+    },
+    {
+      "FromLinter": "errcheck",
+      "Text": "Error return value of `gz.Close` is not checked",
+      "Severity": "error",
+      "SourceLines": [
+        "\t\t\tdefer gz.Close()"
+      ],
+      "Replacement": null,
+      "Pos": {
+        "Filename": "internal/app/compressing/compressing.go",
+        "Offset": 563,
+        "Line": 30,
+        "Column": 18
       },
       "ExpectNoLint": false,
       "ExpectedNoLintLinter": ""
@@ -55,8 +61,8 @@
       "Replacement": null,
       "Pos": {
         "Filename": "internal/app/compressing/compressing.go",
-        "Offset": 541,
-        "Line": 29,
+        "Offset": 797,
+        "Line": 42,
         "Column": 18
       },
       "ExpectNoLint": false,
@@ -72,9 +78,60 @@
       "Replacement": null,
       "Pos": {
         "Filename": "internal/app/compressing/compressing.go",
-        "Offset": 588,
-        "Line": 32,
+        "Offset": 844,
+        "Line": 45,
         "Column": 17
+      },
+      "ExpectNoLint": false,
+      "ExpectedNoLintLinter": ""
+    },
+    {
+      "FromLinter": "govet",
+      "Text": "fieldalignment: struct with 64 pointer bytes could be 56",
+      "Severity": "error",
+      "SourceLines": [
+        "type Config struct {"
+      ],
+      "Replacement": null,
+      "Pos": {
+        "Filename": "internal/app/config/config.go",
+        "Offset": 80,
+        "Line": 10,
+        "Column": 13
+      },
+      "ExpectNoLint": false,
+      "ExpectedNoLintLinter": ""
+    },
+    {
+      "FromLinter": "stylecheck",
+      "Text": "ST1003: type UrlData should be URLData",
+      "Severity": "error",
+      "SourceLines": [
+        "type UrlData struct {"
+      ],
+      "Replacement": null,
+      "Pos": {
+        "Filename": "internal/app/handlers/handlers.go",
+        "Offset": 406,
+        "Line": 25,
+        "Column": 6
+      },
+      "ExpectNoLint": false,
+      "ExpectedNoLintLinter": ""
+    },
+    {
+      "FromLinter": "stylecheck",
+      "Text": "ST1003: type UrlResponse should be URLResponse",
+      "Severity": "error",
+      "SourceLines": [
+        "type UrlResponse struct {"
+      ],
+      "Replacement": null,
+      "Pos": {
+        "Filename": "internal/app/handlers/handlers.go",
+        "Offset": 521,
+        "Line": 30,
+        "Column": 6
       },
       "ExpectNoLint": false,
       "ExpectedNoLintLinter": ""
@@ -89,8 +146,8 @@
       "Replacement": null,
       "Pos": {
         "Filename": "internal/app/handlers/handlers.go",
-        "Offset": 398,
-        "Line": 23,
+        "Offset": 646,
+        "Line": 35,
         "Column": 15
       },
       "ExpectNoLint": false,
@@ -101,31 +158,65 @@
       "Text": "captLocal: `URL' should not be capitalized",
       "Severity": "error",
       "SourceLines": [
-        "func (h Handlers) Shorten(URL string) string {"
+        "func (h Handlers) Shorten(URL string) (string, error) {"
       ],
       "Replacement": null,
       "Pos": {
         "Filename": "internal/app/handlers/handlers.go",
-        "Offset": 651,
-        "Line": 36,
+        "Offset": 1016,
+        "Line": 52,
         "Column": 27
       },
       "ExpectNoLint": false,
       "ExpectedNoLintLinter": ""
     },
     {
-      "FromLinter": "errorlint",
-      "Text": "comparing with == will fail on wrapped errors. Use errors.Is to check for a specific error",
+      "FromLinter": "wrapcheck",
+      "Text": "error returned from external package is unwrapped: sig: func (*github.com/alexeyvilmost/urlshort.git/internalstorage.Storage).Add(shortURL string, fullURL string) (string, error)",
       "Severity": "error",
       "SourceLines": [
-        "\tfor err == storage.ErrDuplicateValue {"
+        "\t\treturn h.BaseURL + str, err"
       ],
       "Replacement": null,
       "Pos": {
         "Filename": "internal/app/handlers/handlers.go",
-        "Offset": 758,
-        "Line": 39,
-        "Column": 6
+        "Offset": 1345,
+        "Line": 60,
+        "Column": 27
+      },
+      "ExpectNoLint": false,
+      "ExpectedNoLintLinter": ""
+    },
+    {
+      "FromLinter": "goconst",
+      "Text": "string `application/json` has 4 occurrences, make it a constant",
+      "Severity": "error",
+      "SourceLines": [
+        "\t\tres.Header().Add(\"Content-Type\", \"application/json\")"
+      ],
+      "Replacement": null,
+      "Pos": {
+        "Filename": "internal/app/handlers/handlers.go",
+        "Offset": 1979,
+        "Line": 79,
+        "Column": 36
+      },
+      "ExpectNoLint": false,
+      "ExpectedNoLintLinter": ""
+    },
+    {
+      "FromLinter": "errcheck",
+      "Text": "Error return value of `(*encoding/json.Encoder).Encode` is not checked",
+      "Severity": "error",
+      "SourceLines": [
+        "\t\tjson.NewEncoder(res).Encode(result)"
+      ],
+      "Replacement": null,
+      "Pos": {
+        "Filename": "internal/app/handlers/handlers.go",
+        "Offset": 2099,
+        "Line": 82,
+        "Column": 30
       },
       "ExpectNoLint": false,
       "ExpectedNoLintLinter": ""
@@ -140,8 +231,42 @@
       "Replacement": null,
       "Pos": {
         "Filename": "internal/app/handlers/handlers.go",
-        "Offset": 1630,
-        "Line": 66,
+        "Offset": 2349,
+        "Line": 92,
+        "Column": 29
+      },
+      "ExpectNoLint": false,
+      "ExpectedNoLintLinter": ""
+    },
+    {
+      "FromLinter": "prealloc",
+      "Text": "Consider pre-allocating `urlResponseList`",
+      "Severity": "error",
+      "SourceLines": [
+        "\tvar urlResponseList []UrlResponse"
+      ],
+      "Replacement": null,
+      "Pos": {
+        "Filename": "internal/app/handlers/handlers.go",
+        "Offset": 2504,
+        "Line": 98,
+        "Column": 2
+      },
+      "ExpectNoLint": false,
+      "ExpectedNoLintLinter": ""
+    },
+    {
+      "FromLinter": "errcheck",
+      "Text": "Error return value of `(*encoding/json.Encoder).Encode` is not checked",
+      "Severity": "error",
+      "SourceLines": [
+        "\tjson.NewEncoder(res).Encode(urlResponseList)"
+      ],
+      "Replacement": null,
+      "Pos": {
+        "Filename": "internal/app/handlers/handlers.go",
+        "Offset": 3177,
+        "Line": 115,
         "Column": 29
       },
       "ExpectNoLint": false,
@@ -152,13 +277,30 @@
       "Text": "Error return value of `io.WriteString` is not checked",
       "Severity": "error",
       "SourceLines": [
-        "\tio.WriteString(res, h.Shorten(string(fullURL)))"
+        "\t\tio.WriteString(res, str)"
       ],
       "Replacement": null,
       "Pos": {
         "Filename": "internal/app/handlers/handlers.go",
-        "Offset": 2151,
-        "Line": 82,
+        "Offset": 3667,
+        "Line": 128,
+        "Column": 17
+      },
+      "ExpectNoLint": false,
+      "ExpectedNoLintLinter": ""
+    },
+    {
+      "FromLinter": "errcheck",
+      "Text": "Error return value of `io.WriteString` is not checked",
+      "Severity": "error",
+      "SourceLines": [
+        "\tio.WriteString(res, str)"
+      ],
+      "Replacement": null,
+      "Pos": {
+        "Filename": "internal/app/handlers/handlers.go",
+        "Offset": 3821,
+        "Line": 136,
         "Column": 16
       },
       "ExpectNoLint": false,
@@ -191,60 +333,349 @@
       "Replacement": null,
       "Pos": {
         "Filename": "internal/app/server/server.go",
-        "Offset": 687,
-        "Line": 23,
+        "Offset": 917,
+        "Line": 31,
         "Column": 9
       },
       "ExpectNoLint": false,
       "ExpectedNoLintLinter": ""
     },
     {
-      "FromLinter": "wrapcheck",
-      "Text": "error returned from external package is unwrapped: sig: func (*os.File).WriteString(s string) (n int, err error)",
+      "FromLinter": "gocritic",
+      "Text": "ifElseChain: rewrite if-else to switch statement",
       "Severity": "error",
       "SourceLines": [
-        "\t\treturn err"
+        "\tif len(config.DBString) != 0 {"
       ],
       "Replacement": null,
       "Pos": {
         "Filename": "internal/app/storage/storage.go",
-        "Offset": 813,
-        "Line": 42,
-        "Column": 10
+        "Offset": 824,
+        "Line": 37,
+        "Column": 2
       },
       "ExpectNoLint": false,
       "ExpectedNoLintLinter": ""
     },
     {
-      "FromLinter": "wrapcheck",
-      "Text": "error returned from external package is unwrapped: sig: func compress/gzip.NewReader(r io.Reader) (*compress/gzip.Reader, error)",
+      "FromLinter": "goconst",
+      "Text": "string `pgx` has 4 occurrences, make it a constant",
       "Severity": "error",
       "SourceLines": [
-        "\t\t\treturn nil, err"
+        "\t\tdb, err := sql.Open(\"pgx\", config.DBString)"
       ],
       "Replacement": null,
       "Pos": {
-        "Filename": "internal/app/utils/utils.go",
-        "Offset": 561,
-        "Line": 27,
-        "Column": 16
+        "Filename": "internal/app/storage/storage.go",
+        "Offset": 877,
+        "Line": 38,
+        "Column": 23
       },
       "ExpectNoLint": false,
       "ExpectedNoLintLinter": ""
     },
     {
       "FromLinter": "errcheck",
-      "Text": "Error return value of `gz.Close` is not checked",
+      "Text": "Error return value of `db.Close` is not checked",
       "Severity": "error",
       "SourceLines": [
-        "\t\tdefer gz.Close()"
+        "\t\tdefer db.Close()"
       ],
       "Replacement": null,
       "Pos": {
-        "Filename": "internal/app/utils/utils.go",
-        "Offset": 599,
-        "Line": 30,
+        "Filename": "internal/app/storage/storage.go",
+        "Offset": 1027,
+        "Line": 42,
         "Column": 17
+      },
+      "ExpectNoLint": false,
+      "ExpectedNoLintLinter": ""
+    },
+    {
+      "FromLinter": "errcheck",
+      "Text": "Error return value of `file.Close` is not checked",
+      "Severity": "error",
+      "SourceLines": [
+        "\t\tdefer file.Close()"
+      ],
+      "Replacement": null,
+      "Pos": {
+        "Filename": "internal/app/storage/storage.go",
+        "Offset": 1649,
+        "Line": 57,
+        "Column": 19
+      },
+      "ExpectNoLint": false,
+      "ExpectedNoLintLinter": ""
+    },
+    {
+      "FromLinter": "errcheck",
+      "Text": "Error return value of `db.Close` is not checked",
+      "Severity": "error",
+      "SourceLines": [
+        "\tdefer db.Close()"
+      ],
+      "Replacement": null,
+      "Pos": {
+        "Filename": "internal/app/storage/storage.go",
+        "Offset": 2177,
+        "Line": 82,
+        "Column": 16
+      },
+      "ExpectNoLint": false,
+      "ExpectedNoLintLinter": ""
+    },
+    {
+      "FromLinter": "wrapcheck",
+      "Text": "error returned from external package is unwrapped: sig: func os.Open(name string) (*os.File, error)",
+      "Severity": "error",
+      "SourceLines": [
+        "\t\t\treturn \"\", false, err"
+      ],
+      "Replacement": null,
+      "Pos": {
+        "Filename": "internal/app/storage/storage.go",
+        "Offset": 2497,
+        "Line": 95,
+        "Column": 22
+      },
+      "ExpectNoLint": false,
+      "ExpectedNoLintLinter": ""
+    },
+    {
+      "FromLinter": "errcheck",
+      "Text": "Error return value of `file.Close` is not checked",
+      "Severity": "error",
+      "SourceLines": [
+        "\t\tdefer file.Close()"
+      ],
+      "Replacement": null,
+      "Pos": {
+        "Filename": "internal/app/storage/storage.go",
+        "Offset": 2523,
+        "Line": 97,
+        "Column": 19
+      },
+      "ExpectNoLint": false,
+      "ExpectedNoLintLinter": ""
+    },
+    {
+      "FromLinter": "wrapcheck",
+      "Text": "error returned from external package is unwrapped: sig: func (*encoding/csv.Reader).ReadAll() (records [][]string, err error)",
+      "Severity": "error",
+      "SourceLines": [
+        "\t\t\treturn \"\", false, err"
+      ],
+      "Replacement": null,
+      "Pos": {
+        "Filename": "internal/app/storage/storage.go",
+        "Offset": 2683,
+        "Line": 102,
+        "Column": 22
+      },
+      "ExpectNoLint": false,
+      "ExpectedNoLintLinter": ""
+    },
+    {
+      "FromLinter": "wrapcheck",
+      "Text": "error returned from external package is unwrapped: sig: func database/sql.Open(driverName string, dataSourceName string) (*database/sql.DB, error)",
+      "Severity": "error",
+      "SourceLines": [
+        "\t\t\treturn \"\", false, err"
+      ],
+      "Replacement": null,
+      "Pos": {
+        "Filename": "internal/app/storage/storage.go",
+        "Offset": 3084,
+        "Line": 117,
+        "Column": 22
+      },
+      "ExpectNoLint": false,
+      "ExpectedNoLintLinter": ""
+    },
+    {
+      "FromLinter": "errorlint",
+      "Text": "comparing with == will fail on wrapped errors. Use errors.Is to check for a specific error",
+      "Severity": "error",
+      "SourceLines": [
+        "\t\t\tif err == sql.ErrNoRows {"
+      ],
+      "Replacement": null,
+      "Pos": {
+        "Filename": "internal/app/storage/storage.go",
+        "Offset": 3245,
+        "Line": 124,
+        "Column": 7
+      },
+      "ExpectNoLint": false,
+      "ExpectedNoLintLinter": ""
+    },
+    {
+      "FromLinter": "wrapcheck",
+      "Text": "error returned from external package is unwrapped: sig: func (*database/sql.Row).Scan(dest ...any) error",
+      "Severity": "error",
+      "SourceLines": [
+        "\t\t\treturn \"\", false, err"
+      ],
+      "Replacement": null,
+      "Pos": {
+        "Filename": "internal/app/storage/storage.go",
+        "Offset": 3384,
+        "Line": 128,
+        "Column": 22
+      },
+      "ExpectNoLint": false,
+      "ExpectedNoLintLinter": ""
+    },
+    {
+      "FromLinter": "gosec",
+      "Text": "G302: Expect file permissions to be 0600 or less",
+      "Severity": "error",
+      "SourceLines": [
+        "\t\tfile, err := os.OpenFile(s.filename, os.O_WRONLY, 0666)"
+      ],
+      "Replacement": null,
+      "Pos": {
+        "Filename": "internal/app/storage/storage.go",
+        "Offset": 0,
+        "Line": 149,
+        "Column": 16
+      },
+      "ExpectNoLint": false,
+      "ExpectedNoLintLinter": ""
+    },
+    {
+      "FromLinter": "wrapcheck",
+      "Text": "error returned from external package is unwrapped: sig: func os.OpenFile(name string, flag int, perm io/fs.FileMode) (*os.File, error)",
+      "Severity": "error",
+      "SourceLines": [
+        "\t\t\treturn \"\", err"
+      ],
+      "Replacement": null,
+      "Pos": {
+        "Filename": "internal/app/storage/storage.go",
+        "Offset": 3947,
+        "Line": 152,
+        "Column": 15
+      },
+      "ExpectNoLint": false,
+      "ExpectedNoLintLinter": ""
+    },
+    {
+      "FromLinter": "errcheck",
+      "Text": "Error return value of `file.Close` is not checked",
+      "Severity": "error",
+      "SourceLines": [
+        "\t\tdefer file.Close()"
+      ],
+      "Replacement": null,
+      "Pos": {
+        "Filename": "internal/app/storage/storage.go",
+        "Offset": 3973,
+        "Line": 154,
+        "Column": 19
+      },
+      "ExpectNoLint": false,
+      "ExpectedNoLintLinter": ""
+    },
+    {
+      "FromLinter": "wrapcheck",
+      "Text": "error returned from external package is unwrapped: sig: func (*encoding/csv.Writer).Write(record []string) error",
+      "Severity": "error",
+      "SourceLines": [
+        "\t\t\treturn \"\", err"
+      ],
+      "Replacement": null,
+      "Pos": {
+        "Filename": "internal/app/storage/storage.go",
+        "Offset": 4231,
+        "Line": 161,
+        "Column": 15
+      },
+      "ExpectNoLint": false,
+      "ExpectedNoLintLinter": ""
+    },
+    {
+      "FromLinter": "wrapcheck",
+      "Text": "error returned from external package is unwrapped: sig: func database/sql.Open(driverName string, dataSourceName string) (*database/sql.DB, error)",
+      "Severity": "error",
+      "SourceLines": [
+        "\t\t\treturn \"\", err"
+      ],
+      "Replacement": null,
+      "Pos": {
+        "Filename": "internal/app/storage/storage.go",
+        "Offset": 4406,
+        "Line": 168,
+        "Column": 15
+      },
+      "ExpectNoLint": false,
+      "ExpectedNoLintLinter": ""
+    },
+    {
+      "FromLinter": "lll",
+      "Text": "line is 130 characters",
+      "Severity": "error",
+      "SourceLines": [
+        "\t\trow := db.QueryRow(\"INSERT INTO urls VALUES ($1, $2) ON CONFLICT (full_url) DO NOTHING RETURNING short_url;\", shortURL, fullURL)"
+      ],
+      "Replacement": null,
+      "Pos": {
+        "Filename": "internal/app/storage/storage.go",
+        "Offset": 0,
+        "Line": 170,
+        "Column": 0
+      },
+      "ExpectNoLint": false,
+      "ExpectedNoLintLinter": ""
+    },
+    {
+      "FromLinter": "errorlint",
+      "Text": "comparing with == will fail on wrapped errors. Use errors.Is to check for a specific error",
+      "Severity": "error",
+      "SourceLines": [
+        "\t\t\tif err == sql.ErrNoRows {"
+      ],
+      "Replacement": null,
+      "Pos": {
+        "Filename": "internal/app/storage/storage.go",
+        "Offset": 4658,
+        "Line": 175,
+        "Column": 7
+      },
+      "ExpectNoLint": false,
+      "ExpectedNoLintLinter": ""
+    },
+    {
+      "FromLinter": "wrapcheck",
+      "Text": "error returned from external package is unwrapped: sig: func (*database/sql.Row).Scan(dest ...any) error",
+      "Severity": "error",
+      "SourceLines": [
+        "\t\t\t\t\treturn \"\", err"
+      ],
+      "Replacement": null,
+      "Pos": {
+        "Filename": "internal/app/storage/storage.go",
+        "Offset": 4974,
+        "Line": 183,
+        "Column": 17
+      },
+      "ExpectNoLint": false,
+      "ExpectedNoLintLinter": ""
+    },
+    {
+      "FromLinter": "wrapcheck",
+      "Text": "error returned from external package is unwrapped: sig: func (*database/sql.Row).Scan(dest ...any) error",
+      "Severity": "error",
+      "SourceLines": [
+        "\t\t\treturn \"\", err"
+      ],
+      "Replacement": null,
+      "Pos": {
+        "Filename": "internal/app/storage/storage.go",
+        "Offset": 5101,
+        "Line": 188,
+        "Column": 15
       },
       "ExpectNoLint": false,
       "ExpectedNoLintLinter": ""
@@ -360,6 +791,9 @@
         "Name": "gochecknoinits"
       },
       {
+        "Name": "gochecksumtype"
+      },
+      {
         "Name": "gocognit"
       },
       {
@@ -442,6 +876,9 @@
         "Name": "importas"
       },
       {
+        "Name": "inamedparam"
+      },
+      {
         "Name": "ineffassign",
         "Enabled": true,
         "EnabledByDefault": true
@@ -515,6 +952,9 @@
         "Name": "paralleltest"
       },
       {
+        "Name": "perfsprint"
+      },
+      {
         "Name": "prealloc",
         "Enabled": true
       },
@@ -524,6 +964,9 @@
       },
       {
         "Name": "promlinter"
+      },
+      {
+        "Name": "protogetter"
       },
       {
         "Name": "reassign",
@@ -536,6 +979,9 @@
       {
         "Name": "rowserrcheck",
         "Enabled": true
+      },
+      {
+        "Name": "sloglint"
       },
       {
         "Name": "scopelint"
@@ -569,6 +1015,9 @@
       {
         "Name": "testableexamples",
         "Enabled": true
+      },
+      {
+        "Name": "testifylint"
       },
       {
         "Name": "testpackage"
@@ -625,11 +1074,11 @@
         "Name": "wsl"
       },
       {
-        "Name": "nolintlint",
-        "Enabled": true
+        "Name": "zerologlint"
       },
       {
-        "Name": "zerologlint"
+        "Name": "nolintlint",
+        "Enabled": true
       }
     ]
   }

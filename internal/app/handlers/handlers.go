@@ -57,7 +57,7 @@ func (h Handlers) Shorten(URL string) (string, error) {
 		str, err = h.Storage.Add(shortURL, URL)
 	}
 	if errors.Is(err, storage.ErrExistingFullURL) {
-		return str, err
+		return h.BaseURL + str, err
 	}
 	if err != nil {
 		return "", fmt.Errorf("failed to add new key-value pair in storage: %w", err)
@@ -138,7 +138,10 @@ func (h Handlers) Shortener(res http.ResponseWriter, req *http.Request) {
 
 func (h Handlers) Expander(res http.ResponseWriter, req *http.Request) {
 	log.Info().Msg(req.URL.Path)
-	fullURL, ok := h.Storage.Get(req.URL.Path)
+	fullURL, ok, err := h.Storage.Get(req.URL.Path)
+	if err != nil {
+		http.Error(res, "Внутренняя ошибка: "+err.Error(), http.StatusInternalServerError)
+	}
 	if !ok {
 		http.Error(res, "Такой ссылки нет", http.StatusBadRequest)
 		return

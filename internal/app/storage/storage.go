@@ -8,9 +8,7 @@ import (
 
 	"github.com/alexeyvilmost/urlshort.git/internal/app/config"
 	"github.com/go-errors/errors"
-	pgerrcode "github.com/jackc/pgerrcode"
 	_ "github.com/jackc/pgx/v5/stdlib"
-	pq "github.com/lib/pq"
 	"github.com/rs/zerolog/log"
 )
 
@@ -19,8 +17,8 @@ var ErrExistingFullURL = errors.New("Addition attempt failed: full url already e
 
 const (
 	LocalMode string = "Local"
-	FileMode         = "File"
-	DBMode           = "DB"
+	FileMode  string = "File"
+	DBMode    string = "DB"
 )
 
 type Storage struct {
@@ -42,11 +40,11 @@ func NewStorage(config *config.Config) (*Storage, error) {
 			return &Storage{}, fmt.Errorf("failed to create db from connection string: %w", err)
 		}
 		defer db.Close()
-		_, err = db.Exec("CREATE TABLE ulrs (short TEXT UNIQUE, full TEXT, PRIMARY KEY short);")
+		_, err = db.Exec("CREATE TABLE IF NOT EXISTS urls (short_url TEXT UNIQUE, full_url TEXT, PRIMARY KEY (short_url));")
 		if err != nil {
 			return &Storage{}, fmt.Errorf("failed to create table in db: %w", err)
 		}
-		_, err = db.Exec("CREATE UNIQUE INDEX full_index ON urls (full);")
+		_, err = db.Exec("CREATE UNIQUE INDEX IF NOT EXISTS full_index ON urls (full_url);")
 		if err != nil {
 			return &Storage{}, fmt.Errorf("failed to create index in db: %w", err)
 		}
@@ -85,57 +83,61 @@ func (s *Storage) CheckDBConn() bool {
 	return true
 }
 
-func (s *Storage) Get(shortURL string) (string, bool) {
+func (s *Storage) Get(shortURL string) (string, bool, error) {
 	switch s.mode {
 	case LocalMode:
 		result, ok := s.container[shortURL]
-		return result, ok
+		return result, ok, nil
 	case FileMode:
 		file, err := os.Open(s.filename)
 		if err != nil {
 			log.Error().Err(err).Msg("failed to open file")
-			return "", false
+			return "", false, err
 		}
 		defer file.Close()
 		reader := csv.NewReader(file)
 		records, err := reader.ReadAll()
 		if err != nil {
 			log.Error().Err(err).Msg("failed to read file")
-			return "", false
+			return "", false, err
 		}
 		for _, record := range records {
 			short := record[0]
 			log.Info().Msg("Searching for " + shortURL + ", checking " + short)
 			if short == shortURL {
 				full := record[1]
-				return full, true
+				return full, true, nil
 			}
 		}
-		return "", false
+		return "", false, nil
 	case DBMode:
 		db, err := sql.Open("pgx", s.DBString)
 		if err != nil {
 			log.Error().Err(err).Msg("failed to create db for storage")
-			return "", false
+			return "", false, err
 		}
-		row := db.QueryRow("SELECT full FROM urls WHERE short = $1;", shortURL)
-		var desc sql.NullString
+		row := db.QueryRow("SELECT full_url FROM urls WHERE short_url = $1;", shortURL)
+		var result string
 
-		err = row.Scan(&desc)
+		err = row.Scan(&result)
 		if err != nil {
-			log.Error().Err(err).Msg("failed to parse db response")
-			return "", false
+			if err == sql.ErrNoRows {
+				return "", false, nil
+			}
+			log.Error().Err(err).Msg("get: failed to parse db response")
+			return "", false, err
 		}
-		if desc.Valid {
-			return desc.String, true
-		}
+		return result, true, nil
 	}
 	log.Error().Msg("unsupported storage mode")
-	return "", false
+	return "", false, errors.New("unsupported storage mode")
 }
 
 func (s *Storage) Add(shortURL, fullURL string) (string, error) {
-	_, ok := s.Get(shortURL)
+	_, ok, err := s.Get(shortURL)
+	if err != nil {
+		return "", err
+	}
 	if ok {
 		return "", ErrDuplicateValue
 	}
@@ -165,21 +167,22 @@ func (s *Storage) Add(shortURL, fullURL string) (string, error) {
 			log.Error().Err(err).Msg("failed to create db for storage")
 			return "", err
 		}
-		_, err = db.Exec("INSERT INTO urls VALUES ($1, $2) ON CONFLICT;", shortURL, fullURL)
+		row := db.QueryRow("INSERT INTO urls VALUES ($1, $2) ON CONFLICT (full_url) DO NOTHING RETURNING short_url;", shortURL, fullURL)
+		var str string
+		err = row.Scan(&str)
 		if err != nil {
-			pqErr, ok := err.(*pq.Error)
-			if ok && pqErr.Code == pgerrcode.UniqueViolation {
-				row := db.QueryRow("SELECT full FROM urls WHERE full = $1;", fullURL)
-				var desc sql.NullString
+			// if nothing return, value already presented
+			if err == sql.ErrNoRows {
+				log.Info().Msg("searching for full_url: " + fullURL)
+				row := db.QueryRow("SELECT short_url FROM urls WHERE full_url = $1;", fullURL)
+				var result string
 
-				err = row.Scan(&desc)
+				err = row.Scan(&result)
 				if err != nil {
-					log.Error().Err(err).Msg("failed to parse db response")
+					log.Error().Err(err).Msg("add: failed to parse db response")
 					return "", err
 				}
-				if desc.Valid {
-					return desc.String, ErrExistingFullURL
-				}
+				return result, ErrExistingFullURL
 			}
 			log.Error().Err(err).Msg("failed to insert value in db")
 			return "", err

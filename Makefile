@@ -37,7 +37,8 @@ test-%:
 	-source-path=. \
 	-binary-path=cmd/shortener/shortener \
     -file-storage-path=/Users/a.vilgelm/study/urlshortener/urlshort/cmd/shortener/storDage.txt \
-	-server-port=8080
+	-server-port=8080 \
+	-database-dsn="port=5232 user=a.vilgelm dbname=a.vilgelm sslmode=disable host=localhost"
 
 test-full-%:
 	cd cmd/shortener/

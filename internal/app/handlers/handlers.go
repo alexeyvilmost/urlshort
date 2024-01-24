@@ -57,7 +57,7 @@ func (h Handlers) Shorten(URL string) (string, error) {
 		str, err = h.Storage.Add(shortURL, URL)
 	}
 	if errors.Is(err, storage.ErrExistingFullURL) {
-		return h.BaseURL + str, err
+		return h.BaseURL + str, error.Wrap(err)
 	}
 	if err != nil {
 		return "", fmt.Errorf("failed to add new key-value pair in storage: %w", err)
@@ -70,7 +70,7 @@ func (h Handlers) ShortenerJSON(res http.ResponseWriter, req *http.Request) {
 	var url Request
 	err := decoder.Decode(&url)
 	if err != nil {
-		log.Info().Err(err).Msg("Не удалось распарсить запрос: ")
+		log.Error().Err(err).Msg("Не удалось распарсить запрос: ")
 		http.Error(res, "Не удалось распарсить запрос", http.StatusBadRequest)
 		return
 	}
@@ -83,6 +83,7 @@ func (h Handlers) ShortenerJSON(res http.ResponseWriter, req *http.Request) {
 		return
 	}
 	if err != nil {
+		log.Error().Err(err).Msg("Не удалось добавить url")
 		res.WriteHeader(http.StatusInternalServerError)
 		return
 	}
@@ -138,13 +139,14 @@ func (h Handlers) Shortener(res http.ResponseWriter, req *http.Request) {
 
 func (h Handlers) Expander(res http.ResponseWriter, req *http.Request) {
 	log.Info().Msg(req.URL.Path)
-	fullURL, ok, err := h.Storage.Get(req.URL.Path)
-	if err != nil {
-		http.Error(res, "Внутренняя ошибка: "+err.Error(), http.StatusInternalServerError)
-	}
-	if !ok {
+	fullURL, err := h.Storage.Get(req.URL.Path)
+	if errors.Is(err, storage.ErrNoValue) {
 		http.Error(res, "Такой ссылки нет", http.StatusBadRequest)
 		return
+	}
+	if err != nil {
+		log.Info().Err(err).Msg("Внутренняя ошибка")
+		http.Error(res, "Внутренняя ошибка", http.StatusInternalServerError)
 	}
 	res.Header().Set("Location", fullURL)
 	res.Header().Set("Content-Type", "application/json")
@@ -154,7 +156,7 @@ func (h Handlers) Expander(res http.ResponseWriter, req *http.Request) {
 func (h Handlers) Ping(res http.ResponseWriter, req *http.Request) {
 	ok := h.Storage.CheckDBConn()
 	if !ok {
-		http.Error(res, "Соединение с БД отсутствует", http.StatusBadRequest)
+		http.Error(res, "Соединение с БД отсутствует", http.StatusInternalServerError)
 		return
 	}
 	res.WriteHeader(http.StatusOK)

@@ -12,8 +12,9 @@ import (
 	"github.com/rs/zerolog/log"
 )
 
-var ErrDuplicateValue = errors.New("Addition attempt failed: key value already exists")
-var ErrExistingFullURL = errors.New("Addition attempt failed: full url already exists")
+var ErrDuplicateValue = errors.New("addition attempt failed: key value already exists")
+var ErrExistingFullURL = errors.New("addition attempt failed: full url already exists")
+var ErrNoValue = errors.New("no value presented for this shortUrl")
 
 const (
 	LocalMode string = "Local"
@@ -32,7 +33,6 @@ func NewStorage(config *config.Config) (*Storage, error) {
 	var file *os.File
 	var err error
 	var mode string
-	log.Debug().Msg("ConnString: " + config.DBString)
 	log.Debug().Msg("FileString: " + config.StorageFile)
 	if len(config.DBString) != 0 {
 		db, err := sql.Open("pgx", config.DBString)
@@ -83,38 +83,41 @@ func (s *Storage) CheckDBConn() bool {
 	return true
 }
 
-func (s *Storage) Get(shortURL string) (string, bool, error) {
+func (s *Storage) Get(shortURL string) (string, error) {
 	switch s.mode {
 	case LocalMode:
 		result, ok := s.container[shortURL]
-		return result, ok, nil
+		if !ok {
+			return "", ErrNoValue
+		}
+		return result, nil
 	case FileMode:
 		file, err := os.Open(s.filename)
 		if err != nil {
 			log.Error().Err(err).Msg("failed to open file")
-			return "", false, err
+			return "", err
 		}
 		defer file.Close()
 		reader := csv.NewReader(file)
 		records, err := reader.ReadAll()
 		if err != nil {
 			log.Error().Err(err).Msg("failed to read file")
-			return "", false, err
+			return "", err
 		}
 		for _, record := range records {
 			short := record[0]
 			log.Info().Msg("Searching for " + shortURL + ", checking " + short)
 			if short == shortURL {
 				full := record[1]
-				return full, true, nil
+				return full, nil
 			}
 		}
-		return "", false, nil
+		return "", ErrNoValue
 	case DBMode:
 		db, err := sql.Open("pgx", s.DBString)
 		if err != nil {
 			log.Error().Err(err).Msg("failed to create db for storage")
-			return "", false, err
+			return "", ErrNoValue
 		}
 		row := db.QueryRow("SELECT full_url FROM urls WHERE short_url = $1;", shortURL)
 		var result string
@@ -122,24 +125,32 @@ func (s *Storage) Get(shortURL string) (string, bool, error) {
 		err = row.Scan(&result)
 		if err != nil {
 			if err == sql.ErrNoRows {
-				return "", false, nil
+				return "", ErrNoValue
 			}
 			log.Error().Err(err).Msg("get: failed to parse db response")
-			return "", false, err
+			return "", err
 		}
-		return result, true, nil
+		return result, nil
 	}
 	log.Error().Msg("unsupported storage mode")
-	return "", false, errors.New("unsupported storage mode")
+	return "", errors.New("unsupported storage mode")
 }
 
 func (s *Storage) Add(shortURL, fullURL string) (string, error) {
-	_, ok, err := s.Get(shortURL)
-	if err != nil {
+	_, err := s.Get(shortURL)
+	switch err {
+	case nil:
+		return "", ErrDuplicateValue
+	case ErrNoValue:
+		// pass
+	default:
 		return "", err
 	}
-	if ok {
-		return "", ErrDuplicateValue
+	if err != nil {
+		if !errors.Is(err, ErrNoValue) {
+			return "", ErrDuplicateValue
+		}
+		return "", err
 	}
 	switch s.mode {
 	case LocalMode:

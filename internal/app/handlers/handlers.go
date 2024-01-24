@@ -99,13 +99,14 @@ func (h Handlers) ShortenBatch(res http.ResponseWriter, req *http.Request) {
 	var urlResponseList []URLResponse
 	err := decoder.Decode(&urlDataList)
 	if err != nil {
-		log.Info().Err(err).Msg("Не удалось распарсить запрос: ")
+		log.Error().Err(err).Msg("Не удалось распарсить запрос: ")
 		http.Error(res, "Не удалось распарсить запрос", http.StatusBadRequest)
 		return
 	}
 	for _, data := range urlDataList {
 		str, err := h.Shorten(data.OriginalURL)
 		if err != nil {
+			log.Error().Err(err).Msg("Не удалось добавить url")
 			res.WriteHeader(http.StatusInternalServerError)
 			return
 		}
@@ -130,6 +131,7 @@ func (h Handlers) Shortener(res http.ResponseWriter, req *http.Request) {
 		return
 	}
 	if err != nil {
+		log.Error().Err(err).Msg("Не удалось добавить url")
 		res.WriteHeader(http.StatusInternalServerError)
 		return
 	}

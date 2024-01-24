@@ -146,12 +146,6 @@ func (s *Storage) Add(shortURL, fullURL string) (string, error) {
 	default:
 		return "", err
 	}
-	if err != nil {
-		if !errors.Is(err, ErrNoValue) {
-			return "", ErrDuplicateValue
-		}
-		return "", err
-	}
 	switch s.mode {
 	case LocalMode:
 		s.container[shortURL] = fullURL

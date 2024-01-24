@@ -57,7 +57,7 @@ func (h Handlers) Shorten(URL string) (string, error) {
 		str, err = h.Storage.Add(shortURL, URL)
 	}
 	if errors.Is(err, storage.ErrExistingFullURL) {
-		return h.BaseURL + str, error.Wrap(err)
+		return h.BaseURL + str, err
 	}
 	if err != nil {
 		return "", fmt.Errorf("failed to add new key-value pair in storage: %w", err)

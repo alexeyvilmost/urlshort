@@ -5,6 +5,8 @@ import (
 	"io"
 	"net/http"
 	"strings"
+
+	"github.com/rs/zerolog/log"
 )
 
 type gzipWriter struct {
@@ -13,7 +15,8 @@ type gzipWriter struct {
 }
 
 func (w gzipWriter) Write(b []byte) (int, error) {
-	return w.Writer.Write(b)
+	num, err := w.Writer.Write(b)
+	return num, err
 }
 
 func WithCompress(next http.Handler) http.Handler {
@@ -23,7 +26,10 @@ func WithCompress(next http.Handler) http.Handler {
 		if r.Header.Get("Content-Encoding") == "gzip" {
 			gz, err := gzip.NewReader(r.Body)
 			if err != nil {
-				io.WriteString(w, err.Error())
+				_, werr := io.WriteString(w, err.Error())
+				if werr != nil {
+					log.Error().Err(werr).Msg("failed to write error")
+				}
 				return
 			}
 			reader = gz
@@ -39,7 +45,10 @@ func WithCompress(next http.Handler) http.Handler {
 
 		gz, err := gzip.NewWriterLevel(w, gzip.BestSpeed)
 		if err != nil {
-			io.WriteString(w, err.Error())
+			_, werr := io.WriteString(w, err.Error())
+			if werr != nil {
+				log.Error().Err(werr).Msg("failed to write error")
+			}
 			return
 		}
 		defer gz.Close()

@@ -205,7 +205,7 @@ func (s *Storage) Add(userID, shortURL, fullURL string) (string, error) {
 		if !ok {
 			s.container[userID] = map[string]string{}
 		}
-		user[shortURL] = fullURL
+		s.container[userID][shortURL] = fullURL
 		return "", nil
 	case FileMode:
 		file, err := os.OpenFile(s.filename, os.O_WRONLY, 0666)

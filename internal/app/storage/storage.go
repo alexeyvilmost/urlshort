@@ -23,10 +23,15 @@ const (
 )
 
 type Storage struct {
-	container map[string]string
+	container map[string]map[string]string
 	filename  string
 	DBString  string
 	mode      string
+}
+
+type UserURLs struct {
+	OriginalURL string `json:"original_url"`
+	ShortURL    string `json:"short_url"`
 }
 
 func NewStorage(config *config.Config) (*Storage, error) {
@@ -40,11 +45,24 @@ func NewStorage(config *config.Config) (*Storage, error) {
 			return &Storage{}, fmt.Errorf("failed to create db from connection string: %w", err)
 		}
 		defer db.Close()
-		_, err = db.Exec("CREATE TABLE IF NOT EXISTS urls (short_url TEXT UNIQUE, full_url TEXT, PRIMARY KEY (short_url));")
+		_, err = db.Exec("CREATE TABLE IF NOT EXISTS urls (short_url TEXT UNIQUE, full_url TEXT, user_id UUID, PRIMARY KEY (short_url), UNIQUE (full_url, user_id));")
 		if err != nil {
 			return &Storage{}, fmt.Errorf("failed to create table in db: %w", err)
 		}
-		_, err = db.Exec("CREATE UNIQUE INDEX IF NOT EXISTS full_index ON urls (full_url);")
+		// _, err = db.Exec("DROP INDEX full_index;")
+		// if err != nil {
+		// 	return &Storage{}, fmt.Errorf("failed to create table in db: %w", err)
+		// }
+		// _, err = db.Exec("DROP INDEX user_index;")
+		// if err != nil {
+		// 	return &Storage{}, fmt.Errorf("failed to create table in db: %w", err)
+		// }
+
+		_, err = db.Exec("CREATE INDEX IF NOT EXISTS full_index ON urls (full_url);")
+		if err != nil {
+			return &Storage{}, fmt.Errorf("failed to create index in db: %w", err)
+		}
+		_, err = db.Exec("CREATE INDEX IF NOT EXISTS user_index ON urls (user_id);")
 		if err != nil {
 			return &Storage{}, fmt.Errorf("failed to create index in db: %w", err)
 		}
@@ -61,7 +79,7 @@ func NewStorage(config *config.Config) (*Storage, error) {
 	}
 
 	result := &Storage{
-		container: map[string]string{},
+		container: map[string]map[string]string{},
 		filename:  config.StorageFile,
 		DBString:  config.DBString,
 		mode:      mode,
@@ -83,10 +101,14 @@ func (s *Storage) CheckDBConn() bool {
 	return true
 }
 
-func (s *Storage) Get(shortURL string) (string, error) {
+func (s *Storage) Get(userID, shortURL string) (string, error) {
 	switch s.mode {
 	case LocalMode:
-		result, ok := s.container[shortURL]
+		user, ok := s.container[userID]
+		if !ok {
+			return "", ErrNoValue
+		}
+		result, ok := user[shortURL]
 		if !ok {
 			return "", ErrNoValue
 		}
@@ -107,7 +129,7 @@ func (s *Storage) Get(shortURL string) (string, error) {
 		for _, record := range records {
 			short := record[0]
 			log.Info().Msg("Searching for " + shortURL + ", checking " + short)
-			if short == shortURL {
+			if short == shortURL && record[2] == userID {
 				full := record[1]
 				return full, nil
 			}
@@ -119,7 +141,7 @@ func (s *Storage) Get(shortURL string) (string, error) {
 			log.Error().Err(err).Msg("failed to create db for storage")
 			return "", ErrNoValue
 		}
-		row := db.QueryRow("SELECT full_url FROM urls WHERE short_url = $1;", shortURL)
+		row := db.QueryRow("SELECT full_url FROM urls WHERE short_url = $1 AND user_id = $2;", shortURL, userID)
 		var result string
 
 		err = row.Scan(&result)
@@ -136,8 +158,37 @@ func (s *Storage) Get(shortURL string) (string, error) {
 	return "", errors.New("unsupported storage mode")
 }
 
-func (s *Storage) Add(shortURL, fullURL string) (string, error) {
-	_, err := s.Get(shortURL)
+func (s *Storage) GetUserURLs(userID string) ([]UserURLs, error) {
+	log.Info().Msg("UserID:" + userID)
+	switch s.mode {
+	case DBMode:
+		db, err := sql.Open("pgx", s.DBString)
+		if err != nil {
+			log.Error().Err(err).Msg("failed to open db for storage")
+			return nil, ErrNoValue
+		}
+		rows, err := db.Query("SELECT short_url, full_url FROM urls WHERE user_id = $1;", userID)
+		if err != nil {
+			return nil, err
+		}
+		var result []UserURLs
+
+		for rows.Next() {
+			var url UserURLs
+			if err := rows.Scan(&url.ShortURL, &url.OriginalURL); err != nil {
+				return result, err
+			}
+			result = append(result, url)
+		}
+		return result, nil
+	default:
+		return nil, ErrNoValue //?
+	}
+}
+
+func (s *Storage) Add(userID, shortURL, fullURL string) (string, error) {
+	log.Info().Msg("UserID:" + userID)
+	_, err := s.Get(userID, shortURL)
 	switch err {
 	case nil:
 		return "", ErrDuplicateValue
@@ -148,7 +199,11 @@ func (s *Storage) Add(shortURL, fullURL string) (string, error) {
 	}
 	switch s.mode {
 	case LocalMode:
-		s.container[shortURL] = fullURL
+		user, ok := s.container[userID]
+		if !ok {
+			s.container[userID] = map[string]string{}
+		}
+		user[shortURL] = fullURL
 		return "", nil
 	case FileMode:
 		file, err := os.OpenFile(s.filename, os.O_WRONLY, 0666)
@@ -159,8 +214,8 @@ func (s *Storage) Add(shortURL, fullURL string) (string, error) {
 		defer file.Close()
 		writer := csv.NewWriter(file)
 		defer writer.Flush()
-		err = writer.Write([]string{shortURL, fullURL})
-		log.Info().Msg("data written: " + shortURL + ", " + fullURL)
+		err = writer.Write([]string{shortURL, fullURL, userID})
+		log.Info().Msg("data written: " + shortURL + ", " + fullURL + ", " + userID)
 		if err != nil {
 			log.Error().Err(err).Msg("failed to write in file")
 			return "", err
@@ -172,14 +227,14 @@ func (s *Storage) Add(shortURL, fullURL string) (string, error) {
 			log.Error().Err(err).Msg("failed to create db for storage")
 			return "", err
 		}
-		row := db.QueryRow("INSERT INTO urls VALUES ($1, $2) ON CONFLICT (full_url) DO NOTHING RETURNING short_url;", shortURL, fullURL)
+		row := db.QueryRow("INSERT INTO urls VALUES ($1, $2, $3) ON CONFLICT DO NOTHING RETURNING short_url;", shortURL, fullURL, userID)
 		var str string
 		err = row.Scan(&str)
 		if err != nil {
 			// if nothing return, value already presented
 			if err == sql.ErrNoRows {
 				log.Info().Msg("searching for full_url: " + fullURL)
-				row := db.QueryRow("SELECT short_url FROM urls WHERE full_url = $1;", fullURL)
+				row := db.QueryRow("SELECT short_url FROM urls WHERE full_url = $1 AND user_id = $2;", fullURL, userID)
 				var result string
 
 				err = row.Scan(&result)

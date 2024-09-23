@@ -17,23 +17,23 @@ type Claims struct {
 	UserID string
 }
 
-const TOKEN_EXP = time.Hour * 3
-const SECRET_KEY = "supersecretkey"
+const tokenExp = time.Hour * 3 //?
+const secretKey = "supersecretkey"
 
 // BuildJWTString создаёт токен и возвращает его в виде строки.
-func BuildJWTString(user_id string) (string, error) {
+func BuildJWTString(userID string) (string, error) {
 	// создаём новый токен с алгоритмом подписи HS256 и утверждениями — Claims
 	token := jwt.NewWithClaims(jwt.SigningMethodHS256, Claims{
 		RegisteredClaims: jwt.RegisteredClaims{
 			// когда создан токен
-			ExpiresAt: jwt.NewNumericDate(time.Now().Add(TOKEN_EXP)),
+			ExpiresAt: jwt.NewNumericDate(time.Now().Add(tokenExp)),
 		},
 		// собственное утверждение
-		UserID: user_id,
+		UserID: userID,
 	})
 
 	// создаём строку токена
-	tokenString, err := token.SignedString([]byte(SECRET_KEY))
+	tokenString, err := token.SignedString([]byte(secretKey))
 	if err != nil {
 		return "", err
 	}
@@ -42,14 +42,14 @@ func BuildJWTString(user_id string) (string, error) {
 	return tokenString, nil
 }
 
-func GetUserId(tokenString string) string {
+func GetUserID(tokenString string) string {
 	claims := &Claims{}
 	token, err := jwt.ParseWithClaims(tokenString, claims,
 		func(t *jwt.Token) (interface{}, error) {
 			if _, ok := t.Method.(*jwt.SigningMethodHMAC); !ok {
 				return nil, fmt.Errorf("unexpected signing method: %v", t.Header["alg"])
 			}
-			return []byte(SECRET_KEY), nil
+			return []byte(secretKey), nil
 		})
 	if err != nil {
 		return ""
@@ -67,7 +67,7 @@ func GetUserId(tokenString string) string {
 func WithAuth(h http.Handler) http.Handler {
 	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		var token string
-		jwt_auth, err := r.Cookie("jwt_auth")
+		jwtAuth, err := r.Cookie("jwt_auth")
 		if err != nil {
 			if err == http.ErrNoCookie {
 				token, err := BuildJWTString(uuid.NewString())
@@ -80,8 +80,8 @@ func WithAuth(h http.Handler) http.Handler {
 					Value:  token,
 					MaxAge: 300,
 				}
-				r.Header.Set("user-id-auth", GetUserId(token))
-				log.Info().Msg(GetUserId(token))
+				r.Header.Set("user-id-auth", GetUserID(token))
+				log.Info().Msg(GetUserID(token))
 				h.ServeHTTP(w, r)
 				http.SetCookie(w, cookie)
 				return
@@ -89,10 +89,10 @@ func WithAuth(h http.Handler) http.Handler {
 			http.Error(w, "Unexpected error while getting auth cookie", http.StatusInternalServerError)
 			return
 		}
-		token = jwt_auth.Value
+		token = jwtAuth.Value
 
-		r.Header.Set("user-id-auth", GetUserId(token))
-		log.Info().Msg(GetUserId(token))
+		r.Header.Set("user-id-auth", GetUserID(token))
+		log.Info().Msg(GetUserID(token))
 		h.ServeHTTP(w, r)
 	})
 }

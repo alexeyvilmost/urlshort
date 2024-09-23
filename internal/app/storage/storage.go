@@ -201,7 +201,7 @@ func (s *Storage) Add(userID, shortURL, fullURL string) (string, error) {
 	}
 	switch s.mode {
 	case LocalMode:
-		user, ok := s.container[userID]
+		_, ok := s.container[userID]
 		if !ok {
 			s.container[userID] = map[string]string{}
 		}

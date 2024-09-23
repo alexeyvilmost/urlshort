@@ -170,6 +170,8 @@ func (s *Storage) GetUserURLs(userID string) ([]UserURLs, error) {
 		rows, err := db.Query("SELECT short_url, full_url FROM urls WHERE user_id = $1;", userID)
 		if err != nil {
 			return nil, err
+		} else if rows.Err() != nil {
+			return nil, rows.Err()
 		}
 		var result []UserURLs
 

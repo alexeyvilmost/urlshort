@@ -70,6 +70,7 @@ func WithAuth(h http.Handler) http.Handler {
 		jwtAuth, err := r.Cookie("jwt_auth")
 		if err != nil {
 			if err == http.ErrNoCookie {
+				log.Info().Msg("No cookie detected, creating new")
 				token, err := BuildJWTString(uuid.NewString())
 				if err != nil {
 					http.Error(w, "Unexpected error while building JWT string", http.StatusInternalServerError)
@@ -81,9 +82,9 @@ func WithAuth(h http.Handler) http.Handler {
 					MaxAge: 300,
 				}
 				r.Header.Set("user-id-auth", GetUserID(token))
-				log.Info().Msg(GetUserID(token))
-				h.ServeHTTP(w, r)
+				r.Header.Set("is-new-user", "true")
 				http.SetCookie(w, cookie)
+				h.ServeHTTP(w, r)
 				return
 			}
 			http.Error(w, "Unexpected error while getting auth cookie", http.StatusInternalServerError)

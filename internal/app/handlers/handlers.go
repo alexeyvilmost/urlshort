@@ -33,7 +33,7 @@ type URLResponse struct {
 }
 
 type Handlers struct {
-	Storage *storage.Storage
+	Storage storage.StorageI
 	BaseURL string
 }
 
@@ -144,8 +144,8 @@ func (h Handlers) Shortener(res http.ResponseWriter, req *http.Request) {
 
 func (h Handlers) Expander(res http.ResponseWriter, req *http.Request) {
 	log.Info().Msg(req.URL.Path)
-	userID := req.Header.Get("user-id-auth")
-	fullURL, err := h.Storage.Get(userID, req.URL.Path)
+	//userID := req.Header.Get("user-id-auth")
+	fullURL, err := h.Storage.Get(req.URL.Path)
 	if errors.Is(err, storage.ErrNoValue) {
 		http.Error(res, "Такой ссылки нет", http.StatusBadRequest)
 		return
@@ -153,6 +153,7 @@ func (h Handlers) Expander(res http.ResponseWriter, req *http.Request) {
 	if err != nil {
 		log.Info().Err(err).Msg("Внутренняя ошибка")
 		http.Error(res, "Внутренняя ошибка", http.StatusInternalServerError)
+		return
 	}
 	res.Header().Set("Location", fullURL)
 	res.Header().Set("Content-Type", "application/json")
@@ -161,11 +162,19 @@ func (h Handlers) Expander(res http.ResponseWriter, req *http.Request) {
 
 func (h Handlers) UserURLs(res http.ResponseWriter, req *http.Request) {
 	log.Info().Msg(req.URL.Path)
+	if req.Header.Get("is-new-user") == "true" {
+		http.Error(res, "Без авторизации", http.StatusUnauthorized)
+		return
+	}
 	userID := req.Header.Get("user-id-auth")
 	urls, err := h.Storage.GetUserURLs(userID)
 	if err != nil {
 		log.Info().Err(err).Msg("Внутренняя ошибка")
 		http.Error(res, "Внутренняя ошибка", http.StatusInternalServerError)
+		return
+	}
+	if len(urls) == 0 {
+		http.Error(res, "Ссылок нет", http.StatusNoContent)
 	}
 	for i, v := range urls {
 		urls[i].ShortURL = h.BaseURL + v.ShortURL

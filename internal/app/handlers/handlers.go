@@ -33,7 +33,7 @@ type URLResponse struct {
 }
 
 type Handlers struct {
-	Storage *storage.Storage
+	Storage storage.StorageI
 	BaseURL string
 }
 
@@ -49,12 +49,12 @@ func NewHandlers(config *config.Config) (*Handlers, error) {
 	return result, nil
 }
 
-func (h Handlers) Shorten(URL string) (string, error) {
+func (h Handlers) Shorten(URL, userID string) (string, error) {
 	shortURL := "/" + utils.GenerateShortKey()
-	str, err := h.Storage.Add(shortURL, URL)
+	str, err := h.Storage.Add(userID, shortURL, URL)
 	for errors.Is(err, storage.ErrDuplicateValue) {
 		shortURL = "/" + utils.GenerateShortKey()
-		str, err = h.Storage.Add(shortURL, URL)
+		str, err = h.Storage.Add(userID, shortURL, URL)
 	}
 	if errors.Is(err, storage.ErrExistingFullURL) {
 		return h.BaseURL + str, err
@@ -74,7 +74,8 @@ func (h Handlers) ShortenerJSON(res http.ResponseWriter, req *http.Request) {
 		http.Error(res, "Не удалось распарсить запрос", http.StatusBadRequest)
 		return
 	}
-	str, err := h.Shorten(url.URL)
+	userID := req.Header.Get("user-id-auth")
+	str, err := h.Shorten(url.URL, userID)
 	if errors.Is(err, storage.ErrExistingFullURL) {
 		res.Header().Add("Content-Type", "application/json")
 		res.WriteHeader(http.StatusConflict)
@@ -103,8 +104,9 @@ func (h Handlers) ShortenBatch(res http.ResponseWriter, req *http.Request) {
 		http.Error(res, "Не удалось распарсить запрос", http.StatusBadRequest)
 		return
 	}
+	userID := req.Header.Get("user-id-auth")
 	for _, data := range urlDataList {
-		str, err := h.Shorten(data.OriginalURL)
+		str, err := h.Shorten(data.OriginalURL, userID)
 		if err != nil {
 			log.Error().Err(err).Msg("Не удалось добавить url")
 			res.WriteHeader(http.StatusInternalServerError)
@@ -124,7 +126,8 @@ func (h Handlers) Shortener(res http.ResponseWriter, req *http.Request) {
 		http.Error(res, "Не удалось распарсить запрос", http.StatusBadRequest)
 		return
 	}
-	str, err := h.Shorten(string(fullURL))
+	userID := req.Header.Get("user-id-auth")
+	str, err := h.Shorten(string(fullURL), userID)
 	if errors.Is(err, storage.ErrExistingFullURL) {
 		res.WriteHeader(http.StatusConflict)
 		io.WriteString(res, str)
@@ -141,6 +144,7 @@ func (h Handlers) Shortener(res http.ResponseWriter, req *http.Request) {
 
 func (h Handlers) Expander(res http.ResponseWriter, req *http.Request) {
 	log.Info().Msg(req.URL.Path)
+	//userID := req.Header.Get("user-id-auth")
 	fullURL, err := h.Storage.Get(req.URL.Path)
 	if errors.Is(err, storage.ErrNoValue) {
 		http.Error(res, "Такой ссылки нет", http.StatusBadRequest)
@@ -149,10 +153,35 @@ func (h Handlers) Expander(res http.ResponseWriter, req *http.Request) {
 	if err != nil {
 		log.Info().Err(err).Msg("Внутренняя ошибка")
 		http.Error(res, "Внутренняя ошибка", http.StatusInternalServerError)
+		return
 	}
 	res.Header().Set("Location", fullURL)
 	res.Header().Set("Content-Type", "application/json")
 	res.WriteHeader(http.StatusTemporaryRedirect)
+}
+
+func (h Handlers) UserURLs(res http.ResponseWriter, req *http.Request) {
+	log.Info().Msg(req.URL.Path)
+	if req.Header.Get("is-new-user") == "true" {
+		http.Error(res, "Без авторизации", http.StatusUnauthorized)
+		return
+	}
+	userID := req.Header.Get("user-id-auth")
+	urls, err := h.Storage.GetUserURLs(userID)
+	if err != nil {
+		log.Info().Err(err).Msg("Внутренняя ошибка")
+		http.Error(res, "Внутренняя ошибка", http.StatusInternalServerError)
+		return
+	}
+	if len(urls) == 0 {
+		http.Error(res, "Ссылок нет", http.StatusNoContent)
+	}
+	for i, v := range urls {
+		urls[i].ShortURL = h.BaseURL + v.ShortURL
+	}
+	res.Header().Add("Content-Type", "application/json")
+	res.WriteHeader(http.StatusOK)
+	json.NewEncoder(res).Encode(urls)
 }
 
 func (h Handlers) Ping(res http.ResponseWriter, req *http.Request) {

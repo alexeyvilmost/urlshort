@@ -1,5 +1,13 @@
 GOLANGCI_LINT_CACHE?=/tmp/praktikum-golangci-lint-cache
 
+BINDIR=/Users/study/study/urlshort/cmd/shortener
+
+DBCONN="port=5432 user=app dbname=shortener password=app host=localhost"
+
+FILENAME=/Users/study/study/urlshort/cmd/shortener/storage.csv
+
+FLAGS=-f $(FILENAME) # -d $(DBCONN)
+
 .PHONY: golangci-lint-run
 golangci-lint-run: _golangci-lint-rm-unformatted-report
 
@@ -13,7 +21,7 @@ _golangci-lint-run: _golangci-lint-reports-mkdir
     -v $(shell pwd):/app \
     -v $(GOLANGCI_LINT_CACHE):/root/.cache \
     -w /app \
-    golangci/golangci-lint:v1.55.2 \
+    golangci/golangci-lint:v1.57.2 \
         golangci-lint run \
             -c .golangci.yml \
 	> ./golangci-lint/report-unformatted.json
@@ -28,24 +36,30 @@ _golangci-lint-rm-unformatted-report: _golangci-lint-format-report
 
 .PHONY: golangci-lint-clean
 golangci-lint-clean:
-	sudo rm -rf ./golangci-lint
+	sudo rm -rf ./golangci-lint 
+
 
 .PHONY: test-%
-test-%:
-	/Users/a.vilgelm/path/shortenertestbeta \
+test-full-%:
+	go build -C cmd/shortener -o shortener
+	shortenertest \
 	-test.v -test.run=^TestIteration$*$$ \
 	-source-path=. \
 	-binary-path=cmd/shortener/shortener \
-    -file-storage-path=/Users/a.vilgelm/study/urlshortener/urlshort/cmd/shortener/storDage.txt \
-	-server-port=8080 \
-	-database-dsn="port=5232 user=a.vilgelm dbname=a.vilgelm sslmode=disable host=localhost"
+    -file-storage-path=/Users/study/study/urlshort/cmd/shortener/storage.csv \
+	-server-port=8080
 
-test-full-%:
-	cd cmd/shortener/
-	go build * -o shortener
-	/Users/a.vilgelm/path/shortenertestbeta \
+test-%:
+	shortenertest \
 	-test.v -test.run=^TestIteration$*$$ \
 	-source-path=. \
-	-binary-path=shortener \
-    -file-storage-path=/Users/a.vilgelm/study/urlshortener/urlshort/cmd/shortener/storDage.txt \
+	-binary-path=cmd/shortener/shortener \
+    -file-storage-path=/Users/study/study/urlshort/cmd/shortener/storage.csv \
 	-server-port=8080
+
+#	-database-dsn="port=5432 user=app dbname=shortener password=app sslmode=disable host=localhost"
+
+.PHONY: build-n-run
+build-n-run:
+	go build -C cmd/shortener -o shortener
+	./cmd/shortener/shortener $(FLAGS)

@@ -149,8 +149,6 @@ func (h Handlers) Shortener(res http.ResponseWriter, req *http.Request) {
 
 func (h Handlers) Expander(res http.ResponseWriter, req *http.Request) {
 	req.URL.Path = req.URL.Path[1:]
-	log.Info().Msg(req.URL.Path)
-	//userID := req.Header.Get("user-id-auth")
 	fullURL, err := h.Storage.Get(req.URL.Path)
 	if errors.Is(err, storage.ErrNoValue) {
 		http.Error(res, "Такой ссылки нет", http.StatusBadRequest)
@@ -171,7 +169,6 @@ func (h Handlers) Expander(res http.ResponseWriter, req *http.Request) {
 }
 
 func (h Handlers) UserURLs(res http.ResponseWriter, req *http.Request) {
-	log.Info().Msg(req.URL.Path)
 	if req.Header.Get("is-new-user") == "true" {
 		http.Error(res, "Без авторизации", http.StatusUnauthorized)
 		return

@@ -60,7 +60,6 @@ func GetUserID(tokenString string) string {
 		return ""
 	}
 
-	fmt.Println("Token os valid")
 	return claims.UserID
 }
 
@@ -85,6 +84,7 @@ func WithAuth(h http.Handler) http.Handler {
 				r.Header.Set("user-id-auth", GetUserID(token))
 				r.Header.Set("is-new-user", "true")
 				http.SetCookie(w, cookie)
+				log.Info().Str("user_id", GetUserID(token)).Msg("")
 				h.ServeHTTP(w, r)
 				return
 			}
@@ -94,7 +94,7 @@ func WithAuth(h http.Handler) http.Handler {
 		token = jwtAuth.Value
 
 		r.Header.Set("user-id-auth", GetUserID(token))
-		log.Info().Msg(GetUserID(token))
+		log.Info().Str("user_id", GetUserID(token)).Msg("")
 		h.ServeHTTP(w, r)
 	})
 }

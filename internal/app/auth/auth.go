@@ -10,35 +10,27 @@ import (
 	"github.com/rs/zerolog/log"
 )
 
-// Claims — структура утверждений, которая включает стандартные утверждения и
-// одно пользовательское UserID
 type Claims struct {
 	jwt.RegisteredClaims
 	UserID string
 }
 
-const tokenExp = time.Hour * 3 //?
+const tokenExp = time.Hour * 3
 const secretKey = "supersecretkey"
 
-// BuildJWTString создаёт токен и возвращает его в виде строки.
 func BuildJWTString(userID string) (string, error) {
-	// создаём новый токен с алгоритмом подписи HS256 и утверждениями — Claims
 	token := jwt.NewWithClaims(jwt.SigningMethodHS256, Claims{
 		RegisteredClaims: jwt.RegisteredClaims{
-			// когда создан токен
 			ExpiresAt: jwt.NewNumericDate(time.Now().Add(tokenExp)),
 		},
-		// собственное утверждение
 		UserID: userID,
 	})
 
-	// создаём строку токена
 	tokenString, err := token.SignedString([]byte(secretKey))
 	if err != nil {
 		return "", err
 	}
 
-	// возвращаем строку токена
 	return tokenString, nil
 }
 
@@ -69,7 +61,6 @@ func WithAuth(h http.Handler) http.Handler {
 		jwtAuth, err := r.Cookie("jwt_auth")
 		if err != nil {
 			if err == http.ErrNoCookie {
-				log.Info().Msg("No cookie detected, creating new")
 				token, err := BuildJWTString(uuid.NewString())
 				if err != nil {
 					http.Error(w, "Unexpected error while building JWT string", http.StatusInternalServerError)

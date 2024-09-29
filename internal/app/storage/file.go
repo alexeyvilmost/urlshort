@@ -111,7 +111,6 @@ func (s *FileStorage) Add(userID, shortURL, fullURL string) (string, error) {
 		log.Error().Err(err).Msg("failed to write in file")
 		return "", err
 	}
-	log.Info().Msg("data written: " + shortURL + ", " + fullURL + ", " + userID)
 	return "", nil
 }
 

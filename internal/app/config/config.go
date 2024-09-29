@@ -21,7 +21,6 @@ func NewConfig() *Config {
 	resultPtr := flag.String("b", "http://localhost:8080", "Result host adress")
 	StorageFile := flag.String("f", "", "Storage filename")
 	LogLevel := flag.String("l", "d", "Log level: 'd' for debug, 'i' for info, 'w' for warn and 'e' for error")
-	// port=5432 user=app dbname=shortener password=app host=localhost
 	DBString := flag.String("d", "", "Connection string for DB")
 
 	flag.Parse()

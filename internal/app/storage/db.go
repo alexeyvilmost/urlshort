@@ -41,8 +41,11 @@ func NewDBStorage(config *config.Config) (*DBStorage, error) {
 
 func (s *DBStorage) CheckDBConn() bool {
 	conn, err := s.db.Conn(context.Background())
+	if err != nil {
+		return false
+	}
 	conn.Close()
-	return err != nil
+	return true
 }
 
 func (s *DBStorage) Get(shortURL string) (string, error) {

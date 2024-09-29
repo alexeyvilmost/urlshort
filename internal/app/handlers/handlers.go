@@ -148,6 +148,7 @@ func (h Handlers) Shortener(res http.ResponseWriter, req *http.Request) {
 }
 
 func (h Handlers) Expander(res http.ResponseWriter, req *http.Request) {
+	req.URL.Path = req.URL.Path[1:]
 	log.Info().Msg(req.URL.Path)
 	//userID := req.Header.Get("user-id-auth")
 	fullURL, err := h.Storage.Get(req.URL.Path)

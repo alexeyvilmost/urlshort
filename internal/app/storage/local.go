@@ -4,6 +4,7 @@ import (
 	"sync"
 
 	"github.com/go-errors/errors"
+	"github.com/rs/zerolog/log"
 )
 
 type LocalStorage struct {
@@ -26,6 +27,7 @@ func (s *LocalStorage) Get(shortURL string) (string, error) {
 	for _, user := range s.container {
 		result, ok := user[shortURL]
 		if ok {
+			log.Info().Msg("Cheking" + result)
 			if result == "-" {
 				return "", ErrGone
 			}

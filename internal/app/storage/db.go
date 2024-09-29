@@ -1,6 +1,7 @@
 package storage
 
 import (
+	"context"
 	"database/sql"
 	"fmt"
 	"strings"
@@ -11,7 +12,7 @@ import (
 )
 
 type DBStorage struct {
-	DBString string
+	db *sql.DB
 }
 
 func NewDBStorage(config *config.Config) (*DBStorage, error) {
@@ -33,32 +34,23 @@ func NewDBStorage(config *config.Config) (*DBStorage, error) {
 		return &DBStorage{}, fmt.Errorf("failed to create index in db: %w", err)
 	}
 	result := &DBStorage{
-		DBString: config.DBString,
+		db: db,
 	}
 	return result, nil
 }
 
 func (s *DBStorage) CheckDBConn() bool {
-	db, err := sql.Open("pgx", s.DBString)
-	if err != nil {
-		log.Error().Err(err).Msg("failed to create db for storage")
-		return false
-	}
-	defer db.Close()
-	return true
+	conn, err := s.db.Conn(context.Background())
+	conn.Close()
+	return err != nil
 }
 
 func (s *DBStorage) Get(shortURL string) (string, error) {
-	db, err := sql.Open("pgx", s.DBString)
-	if err != nil {
-		log.Error().Err(err).Msg("failed to create db for storage")
-		return "", ErrNoValue
-	}
-	row := db.QueryRow("SELECT full_url, is_deleted FROM urls WHERE short_url = $1;", shortURL)
+	row := s.db.QueryRow("SELECT full_url, is_deleted FROM urls WHERE short_url = $1;", shortURL)
 	var result string
 	var deleted bool
 
-	err = row.Scan(&result, &deleted)
+	err := row.Scan(&result, &deleted)
 	if err != nil {
 		if err == sql.ErrNoRows {
 			return "", ErrNoValue
@@ -73,16 +65,11 @@ func (s *DBStorage) Get(shortURL string) (string, error) {
 }
 
 func (s *DBStorage) GetByUser(shortURL, userID string) (string, error) {
-	db, err := sql.Open("pgx", s.DBString)
-	if err != nil {
-		log.Error().Err(err).Msg("failed to create db for storage")
-		return "", ErrNoValue
-	}
-	row := db.QueryRow("SELECT full_url, is_deleted FROM urls WHERE short_url = $1 AND user_id = $2;", shortURL, userID)
+	row := s.db.QueryRow("SELECT full_url, is_deleted FROM urls WHERE short_url = $1 AND user_id = $2;", shortURL, userID)
 	var result string
 	var deleted bool
 
-	err = row.Scan(&result, &deleted)
+	err := row.Scan(&result, &deleted)
 	if err != nil {
 		if err == sql.ErrNoRows {
 			return "", ErrNoValue
@@ -97,12 +84,7 @@ func (s *DBStorage) GetByUser(shortURL, userID string) (string, error) {
 }
 
 func (s *DBStorage) GetUserURLs(userID string) ([]UserURLs, error) {
-	db, err := sql.Open("pgx", s.DBString)
-	if err != nil {
-		log.Error().Err(err).Msg("failed to open db for storage")
-		return nil, ErrNoValue
-	}
-	rows, err := db.Query("SELECT short_url, full_url FROM urls WHERE user_id = $1 AND is_deleted != TRUE;", userID)
+	rows, err := s.db.Query("SELECT short_url, full_url FROM urls WHERE user_id = $1 AND is_deleted != TRUE;", userID)
 	if err != nil {
 		return nil, err
 	} else if rows.Err() != nil {
@@ -130,19 +112,14 @@ func (s *DBStorage) Add(userID, shortURL, fullURL string) (string, error) {
 	default:
 		return "", err
 	}
-	db, err := sql.Open("pgx", s.DBString)
-	if err != nil {
-		log.Error().Err(err).Msg("failed to create db for storage")
-		return "", err
-	}
-	row := db.QueryRow("INSERT INTO urls VALUES ($1, $2, $3, FALSE) ON CONFLICT DO NOTHING RETURNING short_url;", shortURL, fullURL, userID)
+	row := s.db.QueryRow("INSERT INTO urls VALUES ($1, $2, $3, FALSE) ON CONFLICT DO NOTHING RETURNING short_url;", shortURL, fullURL, userID)
 	var str string
 	err = row.Scan(&str)
 	if err != nil {
 		// if nothing return, value already presented
 		if err == sql.ErrNoRows {
 			log.Info().Msg("searching for full_url: " + fullURL)
-			row := db.QueryRow("SELECT short_url FROM urls WHERE full_url = $1 AND user_id = $2;", fullURL, userID)
+			row := s.db.QueryRow("SELECT short_url FROM urls WHERE full_url = $1 AND user_id = $2;", fullURL, userID)
 			var result string
 
 			err = row.Scan(&result)
@@ -159,10 +136,5 @@ func (s *DBStorage) Add(userID, shortURL, fullURL string) (string, error) {
 }
 
 func (s *DBStorage) DeleteURLs(userID string, shortURLs []string) {
-	db, err := sql.Open("pgx", s.DBString)
-	if err != nil {
-		log.Error().Err(err).Msg("failed to open db for storage")
-		return
-	}
-	db.Query("UPDATE urls SET is_deleted = TRUE WHERE user_id = $1 AND short_url IN ($2);", userID, strings.Join(shortURLs, ","))
+	s.db.Query("UPDATE urls SET is_deleted = TRUE WHERE user_id = $1 AND short_url IN ($2);", userID, strings.Join(shortURLs, ","))
 }

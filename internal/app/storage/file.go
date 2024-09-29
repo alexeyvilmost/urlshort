@@ -114,3 +114,7 @@ func (s *FileStorage) Add(userID, shortURL, fullURL string) (string, error) {
 	log.Info().Msg("data written: " + shortURL + ", " + fullURL + ", " + userID)
 	return "", nil
 }
+
+func (s *FileStorage) DeleteURLs(userID string, shortURLs []string) {
+	log.Info().Msg("Not supported in file storage")
+}

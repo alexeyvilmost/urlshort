@@ -9,12 +9,7 @@ import (
 var ErrDuplicateValue = errors.New("addition attempt failed: key value already exists")
 var ErrExistingFullURL = errors.New("addition attempt failed: full url already exists")
 var ErrNoValue = errors.New("no value presented for this shortUrl")
-
-const (
-	LocalMode string = "Local"
-	FileMode  string = "File"
-	DBMode    string = "DB"
-)
+var ErrGone = errors.New("this url was deleted")
 
 type StorageI interface {
 	CheckDBConn() bool
@@ -22,6 +17,7 @@ type StorageI interface {
 	GetByUser(shortURL, userID string) (string, error)
 	GetUserURLs(userID string) ([]UserURLs, error)
 	Add(userID, shortURL, fullURL string) (string, error)
+	DeleteURLs(userID string, shortURLs []string)
 }
 type UserURLs struct {
 	OriginalURL string `json:"original_url"`

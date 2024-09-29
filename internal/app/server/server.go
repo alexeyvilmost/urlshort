@@ -27,6 +27,7 @@ func StartServer() error {
 	r.Post("/api/shorten/batch", handlers.ShortenBatch)
 	r.Get("/{short_url}", handlers.Expander)
 	r.Get("/api/user/urls", handlers.UserURLs)
+	r.Delete("/api/user/urls", handlers.DeteleURLs)
 	r.Get("/ping", handlers.Ping)
 	zerolog.SetGlobalLevel(config.LogLevel)
 	err = http.ListenAndServe(config.ServerAddress, r)

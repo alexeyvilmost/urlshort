@@ -42,24 +42,27 @@ golangci-lint-clean:
 .PHONY: test-%
 test-full-%:
 	go build -C cmd/shortener -o shortener
-	shortenertest \
+	shortenertestbeta \
 	-test.v -test.run=^TestIteration$*$$ \
 	-source-path=. \
 	-binary-path=cmd/shortener/shortener \
     -file-storage-path=/Users/study/study/urlshort/cmd/shortener/storage.csv \
-	-server-port=8080
+	-server-port=8080 \
+	-database-dsn="port=5432 user=app dbname=shortener password=app sslmode=disable host=localhost"
 
 test-%:
-	shortenertest \
+	shortenertestbeta \
 	-test.v -test.run=^TestIteration$*$$ \
 	-source-path=. \
 	-binary-path=cmd/shortener/shortener \
     -file-storage-path=/Users/study/study/urlshort/cmd/shortener/storage.csv \
-	-server-port=8080
-
-#	-database-dsn="port=5432 user=app dbname=shortener password=app sslmode=disable host=localhost"
+	-server-port=8080 \
+	-database-dsn="port=5432 user=app dbname=shortener password=app sslmode=disable host=localhost"
 
 .PHONY: build-n-run
 build-n-run:
 	go build -C cmd/shortener -o shortener
 	./cmd/shortener/shortener $(FLAGS)
+
+.PHONY: build
+	go build -C cmd/shortener -o shortener

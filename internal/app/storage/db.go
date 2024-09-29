@@ -3,6 +3,7 @@ package storage
 import (
 	"database/sql"
 	"fmt"
+	"strings"
 
 	"github.com/alexeyvilmost/urlshort.git/internal/app/config"
 	_ "github.com/jackc/pgx/v5/stdlib"
@@ -19,7 +20,7 @@ func NewDBStorage(config *config.Config) (*DBStorage, error) {
 		return &DBStorage{}, fmt.Errorf("failed to create db from connection string: %w", err)
 	}
 	defer db.Close()
-	_, err = db.Exec("CREATE TABLE IF NOT EXISTS urls (short_url TEXT UNIQUE, full_url TEXT, user_id UUID, PRIMARY KEY (short_url), UNIQUE (full_url, user_id));")
+	_, err = db.Exec("CREATE TABLE IF NOT EXISTS urls (short_url TEXT UNIQUE, full_url TEXT, user_id UUID, is_deleted BOOL, PRIMARY KEY (short_url), UNIQUE (full_url, user_id));")
 	if err != nil {
 		return &DBStorage{}, fmt.Errorf("failed to create table in db: %w", err)
 	}
@@ -53,16 +54,20 @@ func (s *DBStorage) Get(shortURL string) (string, error) {
 		log.Error().Err(err).Msg("failed to create db for storage")
 		return "", ErrNoValue
 	}
-	row := db.QueryRow("SELECT full_url FROM urls WHERE short_url = $1;", shortURL)
+	row := db.QueryRow("SELECT full_url, is_deleted FROM urls WHERE short_url = $1;", shortURL)
 	var result string
+	var deleted bool
 
-	err = row.Scan(&result)
+	err = row.Scan(&result, &deleted)
 	if err != nil {
 		if err == sql.ErrNoRows {
 			return "", ErrNoValue
 		}
 		log.Error().Err(err).Msg("get: failed to parse db response")
 		return "", err
+	}
+	if deleted {
+		return "", ErrGone
 	}
 	return result, nil
 }
@@ -73,16 +78,20 @@ func (s *DBStorage) GetByUser(shortURL, userID string) (string, error) {
 		log.Error().Err(err).Msg("failed to create db for storage")
 		return "", ErrNoValue
 	}
-	row := db.QueryRow("SELECT full_url FROM urls WHERE short_url = $1 AND user_id = $2;", shortURL, userID)
+	row := db.QueryRow("SELECT full_url, is_deleted FROM urls WHERE short_url = $1 AND user_id = $2;", shortURL, userID)
 	var result string
+	var deleted bool
 
-	err = row.Scan(&result)
+	err = row.Scan(&result, &deleted)
 	if err != nil {
 		if err == sql.ErrNoRows {
 			return "", ErrNoValue
 		}
 		log.Error().Err(err).Msg("get: failed to parse db response")
 		return "", err
+	}
+	if deleted {
+		return "", ErrGone
 	}
 	return result, nil
 }
@@ -93,7 +102,7 @@ func (s *DBStorage) GetUserURLs(userID string) ([]UserURLs, error) {
 		log.Error().Err(err).Msg("failed to open db for storage")
 		return nil, ErrNoValue
 	}
-	rows, err := db.Query("SELECT short_url, full_url FROM urls WHERE user_id = $1;", userID)
+	rows, err := db.Query("SELECT short_url, full_url FROM urls WHERE user_id = $1 AND is_deleted = FALSE;", userID)
 	if err != nil {
 		return nil, err
 	} else if rows.Err() != nil {
@@ -147,4 +156,13 @@ func (s *DBStorage) Add(userID, shortURL, fullURL string) (string, error) {
 		return "", err
 	}
 	return "", nil
+}
+
+func (s *DBStorage) DeleteURLs(userID string, shortURLs []string) {
+	db, err := sql.Open("pgx", s.DBString)
+	if err != nil {
+		log.Error().Err(err).Msg("failed to open db for storage")
+		return
+	}
+	db.Query("UPDATE urls SET is_deleted = TRUE WHERE user_id = $1 AND short_url IN ($2);", userID, strings.Join(shortURLs, ","))
 }

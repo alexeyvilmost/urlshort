@@ -150,6 +150,9 @@ func (h Handlers) Expander(res http.ResponseWriter, req *http.Request) {
 		http.Error(res, "Такой ссылки нет", http.StatusBadRequest)
 		return
 	}
+	if errors.Is(err, storage.ErrGone) {
+		http.Error(res, "Ссылка была удалена", http.StatusGone)
+	}
 	if err != nil {
 		log.Info().Err(err).Msg("Внутренняя ошибка")
 		http.Error(res, "Внутренняя ошибка", http.StatusInternalServerError)
@@ -182,6 +185,24 @@ func (h Handlers) UserURLs(res http.ResponseWriter, req *http.Request) {
 	res.Header().Add("Content-Type", "application/json")
 	res.WriteHeader(http.StatusOK)
 	json.NewEncoder(res).Encode(urls)
+}
+
+func (h Handlers) DeteleURLs(res http.ResponseWriter, req *http.Request) {
+	decoder := json.NewDecoder(req.Body)
+	var shortURLs []string
+	err := decoder.Decode(&shortURLs)
+	if err != nil {
+		log.Error().Err(err).Msg("Не удалось распарсить запрос: ")
+		http.Error(res, "Не удалось распарсить запрос", http.StatusBadRequest)
+		return
+	}
+	if req.Header.Get("is-new-user") == "true" {
+		http.Error(res, "Без авторизации", http.StatusUnauthorized)
+		return
+	}
+	userID := req.Header.Get("user-id-auth")
+	go h.Storage.DeleteURLs(userID, shortURLs)
+	res.WriteHeader(http.StatusAccepted)
 }
 
 func (h Handlers) Ping(res http.ResponseWriter, req *http.Request) {

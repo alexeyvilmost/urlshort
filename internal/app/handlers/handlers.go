@@ -158,6 +158,7 @@ func (h Handlers) Expander(res http.ResponseWriter, req *http.Request) {
 	}
 	if errors.Is(err, storage.ErrGone) {
 		http.Error(res, "Ссылка была удалена", http.StatusGone)
+		return
 	}
 	if err != nil {
 		log.Info().Err(err).Msg("Внутренняя ошибка")

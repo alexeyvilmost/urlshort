@@ -20,7 +20,6 @@ func NewDBStorage(config *config.Config) (*DBStorage, error) {
 	if err != nil {
 		return &DBStorage{}, fmt.Errorf("failed to create db from connection string: %w", err)
 	}
-	defer db.Close()
 	_, err = db.Exec("CREATE TABLE IF NOT EXISTS urls (short_url TEXT UNIQUE, full_url TEXT, user_id UUID, is_deleted BOOL, PRIMARY KEY (short_url), UNIQUE (full_url, user_id));")
 	if err != nil {
 		return &DBStorage{}, fmt.Errorf("failed to create table in db: %w", err)

@@ -140,7 +140,7 @@ func (s *DBStorage) Add(userID, shortURL, fullURL string) (string, error) {
 func (s *DBStorage) DeleteURLs(userID string, shortURLs []string) {
 	query := "UPDATE urls SET is_deleted = TRUE WHERE user_id ='" + userID + "' AND short_url IN ('" + strings.Join(shortURLs, "','") + "');"
 	rows, err := s.db.Query(query)
-	if err != nil || rows.Err != nil {
+	if err != nil || rows.Err() != nil {
 		log.Error().Err(err).Err(rows.Err()).Msg("Can't delete URLs")
 	}
 }

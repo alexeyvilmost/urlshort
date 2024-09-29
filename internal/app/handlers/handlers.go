@@ -50,19 +50,19 @@ func NewHandlers(config *config.Config) (*Handlers, error) {
 }
 
 func (h Handlers) Shorten(URL, userID string) (string, error) {
-	shortURL := "/" + utils.GenerateShortKey()
+	shortURL := utils.GenerateShortKey()
 	str, err := h.Storage.Add(userID, shortURL, URL)
 	for errors.Is(err, storage.ErrDuplicateValue) {
-		shortURL = "/" + utils.GenerateShortKey()
+		shortURL = utils.GenerateShortKey()
 		str, err = h.Storage.Add(userID, shortURL, URL)
 	}
 	if errors.Is(err, storage.ErrExistingFullURL) {
-		return h.BaseURL + str, err
+		return h.BaseURL + "/" + str, err
 	}
 	if err != nil {
 		return "", fmt.Errorf("failed to add new key-value pair in storage: %w", err)
 	}
-	return h.BaseURL + shortURL, nil
+	return h.BaseURL + "/" + shortURL, nil
 }
 
 func (h Handlers) ShortenerJSON(res http.ResponseWriter, req *http.Request) {
@@ -107,7 +107,12 @@ func (h Handlers) ShortenBatch(res http.ResponseWriter, req *http.Request) {
 	userID := req.Header.Get("user-id-auth")
 	for _, data := range urlDataList {
 		str, err := h.Shorten(data.OriginalURL, userID)
-		if err != nil {
+		switch err {
+		case nil:
+			// pass
+		case storage.ErrExistingFullURL:
+			// pass
+		default:
 			log.Error().Err(err).Msg("Не удалось добавить url")
 			res.WriteHeader(http.StatusInternalServerError)
 			return
@@ -180,7 +185,7 @@ func (h Handlers) UserURLs(res http.ResponseWriter, req *http.Request) {
 		http.Error(res, "Ссылок нет", http.StatusNoContent)
 	}
 	for i, v := range urls {
-		urls[i].ShortURL = h.BaseURL + v.ShortURL
+		urls[i].ShortURL = h.BaseURL + "/" + v.ShortURL
 	}
 	res.Header().Add("Content-Type", "application/json")
 	res.WriteHeader(http.StatusOK)

@@ -77,6 +77,7 @@ func WithAuth(h http.Handler) http.Handler {
 					return
 				}
 				cookie := &http.Cookie{
+					Path:   "/",
 					Name:   "jwt_auth",
 					Value:  token,
 					MaxAge: 300,

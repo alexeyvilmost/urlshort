@@ -58,6 +58,7 @@ func (s *LocalStorage) Add(userID, shortURL, fullURL string) (string, error) {
 	_, err := s.GetByUser(shortURL, userID)
 	switch err {
 	case nil:
+		return "", ErrDuplicateValue
 	case ErrGone:
 		return "", ErrDuplicateValue
 	case ErrNoValue:

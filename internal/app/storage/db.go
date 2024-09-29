@@ -102,7 +102,7 @@ func (s *DBStorage) GetUserURLs(userID string) ([]UserURLs, error) {
 		log.Error().Err(err).Msg("failed to open db for storage")
 		return nil, ErrNoValue
 	}
-	rows, err := db.Query("SELECT short_url, full_url FROM urls WHERE user_id = $1 AND is_deleted = FALSE;", userID)
+	rows, err := db.Query("SELECT short_url, full_url FROM urls WHERE user_id = $1 AND is_deleted != TRUE;", userID)
 	if err != nil {
 		return nil, err
 	} else if rows.Err() != nil {
@@ -135,7 +135,7 @@ func (s *DBStorage) Add(userID, shortURL, fullURL string) (string, error) {
 		log.Error().Err(err).Msg("failed to create db for storage")
 		return "", err
 	}
-	row := db.QueryRow("INSERT INTO urls VALUES ($1, $2, $3) ON CONFLICT DO NOTHING RETURNING short_url;", shortURL, fullURL, userID)
+	row := db.QueryRow("INSERT INTO urls VALUES ($1, $2, $3, FALSE) ON CONFLICT DO NOTHING RETURNING short_url;", shortURL, fullURL, userID)
 	var str string
 	err = row.Scan(&str)
 	if err != nil {

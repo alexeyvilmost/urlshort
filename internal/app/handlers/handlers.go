@@ -1,11 +1,13 @@
 package handlers
 
 import (
+	"context"
 	"encoding/json"
 	"errors"
 	"fmt"
 	"io"
 	"net/http"
+	"time"
 
 	"github.com/rs/zerolog/log"
 
@@ -51,10 +53,19 @@ func NewHandlers(config *config.Config) (*Handlers, error) {
 
 func (h Handlers) Shorten(URL, userID string) (string, error) {
 	shortURL := utils.GenerateShortKey()
-	str, err := h.Storage.Add(userID, shortURL, URL)
-	for errors.Is(err, storage.ErrDuplicateValue) {
-		shortURL = utils.GenerateShortKey()
-		str, err = h.Storage.Add(userID, shortURL, URL)
+	var str string
+	var err error
+	for {
+		shortURL := utils.GenerateShortKey()
+		ctx, _ := context.WithTimeout(context.Background(), time.Second*5)
+		str, err = h.Storage.Add(ctx, userID, shortURL, URL)
+		if err != nil {
+			if errors.Is(err, storage.ErrDuplicateValue) {
+				continue
+			} else {
+				break
+			}
+		}
 	}
 	if errors.Is(err, storage.ErrExistingFullURL) {
 		return h.BaseURL + "/" + str, err
@@ -149,7 +160,8 @@ func (h Handlers) Shortener(res http.ResponseWriter, req *http.Request) {
 
 func (h Handlers) Expander(res http.ResponseWriter, req *http.Request) {
 	req.URL.Path = req.URL.Path[1:]
-	fullURL, err := h.Storage.Get(req.URL.Path)
+	ctx, _ := context.WithTimeout(context.Background(), time.Second*5)
+	fullURL, err := h.Storage.Get(ctx, req.URL.Path)
 	if errors.Is(err, storage.ErrNoValue) {
 		http.Error(res, "Такой ссылки нет", http.StatusBadRequest)
 		return
@@ -174,7 +186,8 @@ func (h Handlers) UserURLs(res http.ResponseWriter, req *http.Request) {
 		return
 	}
 	userID := req.Header.Get("user-id-auth")
-	urls, err := h.Storage.GetUserURLs(userID)
+	ctx, _ := context.WithTimeout(context.Background(), time.Second*5)
+	urls, err := h.Storage.GetUserURLs(ctx, userID)
 	if err != nil {
 		log.Info().Err(err).Msg("Внутренняя ошибка")
 		http.Error(res, "Внутренняя ошибка", http.StatusInternalServerError)
@@ -205,12 +218,14 @@ func (h Handlers) DeteleURLs(res http.ResponseWriter, req *http.Request) {
 		return
 	}
 	userID := req.Header.Get("user-id-auth")
-	go h.Storage.DeleteURLs(userID, shortURLs)
+	ctx, _ := context.WithTimeout(context.Background(), time.Second*5)
+	go h.Storage.DeleteURLs(ctx, userID, shortURLs)
 	res.WriteHeader(http.StatusAccepted)
 }
 
 func (h Handlers) Ping(res http.ResponseWriter, req *http.Request) {
-	ok := h.Storage.CheckDBConn()
+	ctx, _ := context.WithTimeout(context.Background(), time.Second*5)
+	ok := h.Storage.CheckDBConn(ctx)
 	if !ok {
 		http.Error(res, "Соединение с БД отсутствует", http.StatusInternalServerError)
 		return

@@ -1,6 +1,8 @@
 package storage
 
 import (
+	"context"
+
 	"github.com/alexeyvilmost/urlshort.git/internal/app/config"
 	"github.com/go-errors/errors"
 	_ "github.com/jackc/pgx/v5/stdlib"
@@ -12,12 +14,12 @@ var ErrNoValue = errors.New("no value presented for this shortUrl")
 var ErrGone = errors.New("this url was deleted")
 
 type StorageI interface {
-	CheckDBConn() bool
-	Get(shortURL string) (string, error)
-	GetByUser(shortURL, userID string) (string, error)
-	GetUserURLs(userID string) ([]UserURLs, error)
-	Add(userID, shortURL, fullURL string) (string, error)
-	DeleteURLs(userID string, shortURLs []string)
+	CheckDBConn(ctx context.Context) bool
+	Get(ctx context.Context, shortURL string) (string, error)
+	GetByUser(ctx context.Context, shortURL, userID string) (string, error)
+	GetUserURLs(ctx context.Context, userID string) ([]UserURLs, error)
+	Add(ctx context.Context, userID, shortURL, fullURL string) (string, error)
+	DeleteURLs(ctx context.Context, userID string, shortURLs []string)
 }
 type UserURLs struct {
 	OriginalURL string `json:"original_url"`

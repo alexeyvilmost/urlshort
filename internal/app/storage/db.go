@@ -38,8 +38,8 @@ func NewDBStorage(config *config.Config) (*DBStorage, error) {
 	return result, nil
 }
 
-func (s *DBStorage) CheckDBConn() bool {
-	conn, err := s.db.Conn(context.Background())
+func (s *DBStorage) CheckDBConn(ctx context.Context) bool {
+	conn, err := s.db.Conn(ctx)
 	if err != nil {
 		return false
 	}
@@ -47,12 +47,15 @@ func (s *DBStorage) CheckDBConn() bool {
 	return true
 }
 
-func (s *DBStorage) Get(shortURL string) (string, error) {
-	row := s.db.QueryRow("SELECT full_url, is_deleted FROM urls WHERE short_url = $1;", shortURL)
+func (s *DBStorage) Get(ctx context.Context, shortURL string) (string, error) {
+	row, err := s.db.QueryContext(ctx, "SELECT full_url, is_deleted FROM urls WHERE short_url = $1;", shortURL)
+	if err != nil {
+		return "", err
+	}
 	var result string
 	var deleted bool
 
-	err := row.Scan(&result, &deleted)
+	err = row.Scan(&result, &deleted)
 	if err != nil {
 		if err == sql.ErrNoRows {
 			return "", ErrNoValue
@@ -66,12 +69,15 @@ func (s *DBStorage) Get(shortURL string) (string, error) {
 	return result, nil
 }
 
-func (s *DBStorage) GetByUser(shortURL, userID string) (string, error) {
-	row := s.db.QueryRow("SELECT full_url, is_deleted FROM urls WHERE short_url = $1 AND user_id = $2;", shortURL, userID)
+func (s *DBStorage) GetByUser(ctx context.Context, shortURL, userID string) (string, error) {
+	row, err := s.db.QueryContext(ctx, "SELECT full_url, is_deleted FROM urls WHERE short_url = $1 AND user_id = $2;", shortURL, userID)
+	if err != nil {
+		return "", err
+	}
 	var result string
 	var deleted bool
 
-	err := row.Scan(&result, &deleted)
+	err = row.Scan(&result, &deleted)
 	if err != nil {
 		if err == sql.ErrNoRows {
 			return "", ErrNoValue
@@ -85,8 +91,8 @@ func (s *DBStorage) GetByUser(shortURL, userID string) (string, error) {
 	return result, nil
 }
 
-func (s *DBStorage) GetUserURLs(userID string) ([]UserURLs, error) {
-	rows, err := s.db.Query("SELECT short_url, full_url FROM urls WHERE user_id = $1 AND is_deleted != TRUE;", userID)
+func (s *DBStorage) GetUserURLs(ctx context.Context, userID string) ([]UserURLs, error) {
+	rows, err := s.db.QueryContext(ctx, "SELECT short_url, full_url FROM urls WHERE user_id = $1 AND is_deleted != TRUE;", userID)
 	if err != nil {
 		return nil, err
 	} else if rows.Err() != nil {
@@ -104,8 +110,8 @@ func (s *DBStorage) GetUserURLs(userID string) ([]UserURLs, error) {
 	return result, nil
 }
 
-func (s *DBStorage) Add(userID, shortURL, fullURL string) (string, error) {
-	_, err := s.GetByUser(shortURL, userID)
+func (s *DBStorage) Add(ctx context.Context, userID, shortURL, fullURL string) (string, error) {
+	_, err := s.GetByUser(ctx, shortURL, userID)
 	switch err {
 	case nil:
 		return "", ErrDuplicateValue
@@ -114,7 +120,10 @@ func (s *DBStorage) Add(userID, shortURL, fullURL string) (string, error) {
 	default:
 		return "", err
 	}
-	row := s.db.QueryRow("INSERT INTO urls VALUES ($1, $2, $3, FALSE) ON CONFLICT DO NOTHING RETURNING short_url;", shortURL, fullURL, userID)
+	row, err := s.db.QueryContext(ctx, "INSERT INTO urls VALUES ($1, $2, $3, FALSE) ON CONFLICT DO NOTHING RETURNING short_url;", shortURL, fullURL, userID)
+	if err != nil {
+		return "", err
+	}
 	var str string
 	err = row.Scan(&str)
 	if err != nil {
@@ -137,9 +146,9 @@ func (s *DBStorage) Add(userID, shortURL, fullURL string) (string, error) {
 	return "", nil
 }
 
-func (s *DBStorage) DeleteURLs(userID string, shortURLs []string) {
+func (s *DBStorage) DeleteURLs(ctx context.Context, userID string, shortURLs []string) {
 	query := "UPDATE urls SET is_deleted = TRUE WHERE user_id ='" + userID + "' AND short_url IN ('" + strings.Join(shortURLs, "','") + "');"
-	rows, err := s.db.Query(query)
+	rows, err := s.db.QueryContext(ctx, query)
 	if err != nil || rows.Err() != nil {
 		log.Error().Err(err).Err(rows.Err()).Msg("Can't delete URLs")
 	}

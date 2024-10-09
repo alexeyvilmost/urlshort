@@ -34,7 +34,7 @@ func BuildJWTString(userID string) (string, error) {
 	return tokenString, nil
 }
 
-func GetUserID(tokenString string) string {
+func GetUserID(tokenString string) (string, error) {
 	claims := &Claims{}
 	token, err := jwt.ParseWithClaims(tokenString, claims,
 		func(t *jwt.Token) (interface{}, error) {
@@ -44,15 +44,15 @@ func GetUserID(tokenString string) string {
 			return []byte(secretKey), nil
 		})
 	if err != nil {
-		return ""
+		return "", err
 	}
 
 	if !token.Valid {
 		fmt.Println("Token is not valid")
-		return ""
+		return "", fmt.Errorf("Invalid token")
 	}
 
-	return claims.UserID
+	return claims.UserID, nil
 }
 
 func WithAuth(h http.Handler) http.Handler {
@@ -72,10 +72,16 @@ func WithAuth(h http.Handler) http.Handler {
 					Value:  token,
 					MaxAge: 300,
 				}
-				r.Header.Set("user-id-auth", GetUserID(token))
+				userID, err := GetUserID(token)
+				if err != nil {
+					log.Error().Err(err).Msg("Error while get user_id from token")
+					http.Error(w, "Unexpected error while get user_id from token", http.StatusInternalServerError)
+					return
+				}
+				r.Header.Set("user-id-auth", userID)
 				r.Header.Set("is-new-user", "true")
 				http.SetCookie(w, cookie)
-				log.Info().Str("user_id", GetUserID(token)).Msg("")
+				log.Info().Str("user_id", userID).Msg("")
 				h.ServeHTTP(w, r)
 				return
 			}
@@ -84,8 +90,14 @@ func WithAuth(h http.Handler) http.Handler {
 		}
 		token = jwtAuth.Value
 
-		r.Header.Set("user-id-auth", GetUserID(token))
-		log.Info().Str("user_id", GetUserID(token)).Msg("")
+		userID, err := GetUserID(token)
+		if err != nil {
+			log.Error().Err(err).Msg("Error while get user_id from token")
+			http.Error(w, "Unexpected error while get user_id from token", http.StatusInternalServerError)
+			return
+		}
+		r.Header.Set("user-id-auth", userID)
+		log.Info().Str("user_id", userID).Msg("")
 		h.ServeHTTP(w, r)
 	})
 }

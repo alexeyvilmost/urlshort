@@ -1,6 +1,7 @@
 package storage
 
 import (
+	"context"
 	"encoding/csv"
 	"fmt"
 	"os"
@@ -31,11 +32,11 @@ func NewFileStorage(config *config.Config) (*FileStorage, error) {
 	return result, nil
 }
 
-func (s *FileStorage) CheckDBConn() bool {
-	return false
+func (s *FileStorage) CheckDBConn(context.Context) bool {
+	return true
 }
 
-func (s *FileStorage) Get(shortURL string) (string, error) {
+func (s *FileStorage) Get(_ context.Context, shortURL string) (string, error) {
 	file, err := os.Open(s.filename)
 	if err != nil {
 		log.Error().Err(err).Msg("failed to open file")
@@ -59,7 +60,7 @@ func (s *FileStorage) Get(shortURL string) (string, error) {
 	return "", ErrNoValue
 }
 
-func (s *FileStorage) GetByUser(shortURL, userID string) (string, error) {
+func (s *FileStorage) GetByUser(_ context.Context, shortURL, userID string) (string, error) {
 	file, err := os.Open(s.filename)
 	if err != nil {
 		log.Error().Err(err).Msg("failed to open file")
@@ -83,13 +84,13 @@ func (s *FileStorage) GetByUser(shortURL, userID string) (string, error) {
 	return "", ErrNoValue
 }
 
-func (s *FileStorage) GetUserURLs(userID string) ([]UserURLs, error) {
+func (s *FileStorage) GetUserURLs(_ context.Context, userID string) ([]UserURLs, error) {
 	return nil, errors.New("user urls only supported in db storage mode")
 }
 
-func (s *FileStorage) Add(userID, shortURL, fullURL string) (string, error) {
+func (s *FileStorage) Add(ctx context.Context, userID, shortURL, fullURL string) (string, error) {
 	log.Info().Msg("UserID:" + userID)
-	_, err := s.GetByUser(shortURL, userID)
+	_, err := s.GetByUser(ctx, shortURL, userID)
 	switch err {
 	case nil:
 		return "", ErrDuplicateValue
@@ -114,6 +115,6 @@ func (s *FileStorage) Add(userID, shortURL, fullURL string) (string, error) {
 	return "", nil
 }
 
-func (s *FileStorage) DeleteURLs(userID string, shortURLs []string) {
+func (s *FileStorage) DeleteURLs(_ context.Context, userID string, shortURLs []string) {
 	log.Info().Msg("Not supported in file storage")
 }

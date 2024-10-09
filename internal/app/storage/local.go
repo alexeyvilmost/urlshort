@@ -1,6 +1,7 @@
 package storage
 
 import (
+	"context"
 	"sync"
 
 	"github.com/go-errors/errors"
@@ -19,11 +20,11 @@ func NewLocalStorage() (*LocalStorage, error) {
 	return result, nil
 }
 
-func (s *LocalStorage) CheckDBConn() bool {
-	return false
+func (s *LocalStorage) CheckDBConn(context.Context) bool {
+	return true
 }
 
-func (s *LocalStorage) Get(shortURL string) (string, error) {
+func (s *LocalStorage) Get(_ context.Context, shortURL string) (string, error) {
 	for _, user := range s.container {
 		result, ok := user[shortURL]
 		if ok {
@@ -37,7 +38,7 @@ func (s *LocalStorage) Get(shortURL string) (string, error) {
 	return "", ErrNoValue
 }
 
-func (s *LocalStorage) GetByUser(shortURL, userID string) (string, error) {
+func (s *LocalStorage) GetByUser(_ context.Context, shortURL, userID string) (string, error) {
 	_, ok := s.container[userID]
 	if !ok {
 		s.container[userID] = map[string]string{}
@@ -52,12 +53,12 @@ func (s *LocalStorage) GetByUser(shortURL, userID string) (string, error) {
 	return "", ErrNoValue
 }
 
-func (s *LocalStorage) GetUserURLs(userID string) ([]UserURLs, error) {
+func (s *LocalStorage) GetUserURLs(_ context.Context, userID string) ([]UserURLs, error) {
 	return nil, errors.New("user urls only supported in db storage mode")
 }
 
-func (s *LocalStorage) Add(userID, shortURL, fullURL string) (string, error) {
-	_, err := s.GetByUser(shortURL, userID)
+func (s *LocalStorage) Add(ctx context.Context, userID, shortURL, fullURL string) (string, error) {
+	_, err := s.GetByUser(ctx, shortURL, userID)
 	switch err {
 	case nil:
 		return "", ErrDuplicateValue
@@ -93,7 +94,7 @@ func (s *LocalStorage) deleteURL(userID, shortURL string) {
 	}
 }
 
-func (s *LocalStorage) DeleteURLs(userID string, shortURLs []string) {
+func (s *LocalStorage) DeleteURLs(_ context.Context, userID string, shortURLs []string) {
 	for _, url := range shortURLs {
 		go s.deleteURL(userID, url)
 	}

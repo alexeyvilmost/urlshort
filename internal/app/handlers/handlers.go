@@ -16,6 +16,15 @@ import (
 	"github.com/alexeyvilmost/urlshort.git/internal/app/utils"
 )
 
+type Storage interface {
+	CheckDBConn(ctx context.Context) bool
+	Get(ctx context.Context, shortURL string) (string, error)
+	GetByUser(ctx context.Context, shortURL, userID string) (string, error)
+	GetUserURLs(ctx context.Context, userID string) ([]storage.UserURLs, error)
+	Add(ctx context.Context, userID, shortURL, fullURL string) (string, error)
+	DeleteURLs(ctx context.Context, userID string, shortURLs []string)
+}
+
 type Result struct {
 	Result string `json:"result"`
 }
@@ -35,7 +44,7 @@ type URLResponse struct {
 }
 
 type Handlers struct {
-	Storage storage.StorageI
+	Storage storage.Storage
 	BaseURL string
 }
 

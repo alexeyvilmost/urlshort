@@ -13,7 +13,7 @@ var ErrExistingFullURL = errors.New("addition attempt failed: full url already e
 var ErrNoValue = errors.New("no value presented for this shortUrl")
 var ErrGone = errors.New("this url was deleted")
 
-type StorageI interface {
+type Storage interface {
 	CheckDBConn(ctx context.Context) bool
 	Get(ctx context.Context, shortURL string) (string, error)
 	GetByUser(ctx context.Context, shortURL, userID string) (string, error)
@@ -26,7 +26,7 @@ type UserURLs struct {
 	ShortURL    string `json:"short_url"`
 }
 
-func NewStorage(config *config.Config) (StorageI, error) {
+func NewStorage(config *config.Config) (Storage, error) {
 	if len(config.DBString) != 0 {
 		return NewDBStorage(config)
 	} else if len(config.StorageFile) != 0 {

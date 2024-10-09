@@ -53,7 +53,9 @@ func NewHandlers(config *config.Config) (*Handlers, error) {
 
 func (h Handlers) Shorten(URL, userID string) (string, error) {
 	shortURL := utils.GenerateShortKey()
-	ctx, _ := context.WithTimeout(context.Background(), time.Second*5)
+	ctx, cancel := context.WithTimeout(context.Background(), time.Second*5)
+	defer cancel()
+
 	str, err := h.Storage.Add(ctx, userID, shortURL, URL)
 	for errors.Is(err, storage.ErrDuplicateValue) {
 		shortURL = utils.GenerateShortKey()
@@ -152,7 +154,9 @@ func (h Handlers) Shortener(res http.ResponseWriter, req *http.Request) {
 
 func (h Handlers) Expander(res http.ResponseWriter, req *http.Request) {
 	req.URL.Path = req.URL.Path[1:]
-	ctx, _ := context.WithTimeout(context.Background(), time.Second*5)
+	ctx, cancel := context.WithTimeout(context.Background(), time.Second*5)
+	defer cancel()
+
 	fullURL, err := h.Storage.Get(ctx, req.URL.Path)
 	if errors.Is(err, storage.ErrNoValue) {
 		http.Error(res, "Такой ссылки нет", http.StatusBadRequest)
@@ -178,7 +182,9 @@ func (h Handlers) UserURLs(res http.ResponseWriter, req *http.Request) {
 		return
 	}
 	userID := req.Header.Get("user-id-auth")
-	ctx, _ := context.WithTimeout(context.Background(), time.Second*5)
+	ctx, cancel := context.WithTimeout(context.Background(), time.Second*5)
+	defer cancel()
+
 	urls, err := h.Storage.GetUserURLs(ctx, userID)
 	if err != nil {
 		log.Info().Err(err).Msg("Внутренняя ошибка")
@@ -210,13 +216,17 @@ func (h Handlers) DeteleURLs(res http.ResponseWriter, req *http.Request) {
 		return
 	}
 	userID := req.Header.Get("user-id-auth")
-	ctx, _ := context.WithTimeout(context.Background(), time.Second*5)
+	ctx, cancel := context.WithTimeout(context.Background(), time.Second*5)
+	defer cancel()
+
 	go h.Storage.DeleteURLs(ctx, userID, shortURLs)
 	res.WriteHeader(http.StatusAccepted)
 }
 
 func (h Handlers) Ping(res http.ResponseWriter, req *http.Request) {
-	ctx, _ := context.WithTimeout(context.Background(), time.Second*5)
+	ctx, cancel := context.WithTimeout(context.Background(), time.Second*5)
+	defer cancel()
+
 	ok := h.Storage.CheckDBConn(ctx)
 	if !ok {
 		http.Error(res, "Соединение с БД отсутствует", http.StatusInternalServerError)

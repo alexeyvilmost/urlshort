@@ -53,19 +53,11 @@ func NewHandlers(config *config.Config) (*Handlers, error) {
 
 func (h Handlers) Shorten(URL, userID string) (string, error) {
 	shortURL := utils.GenerateShortKey()
-	var str string
-	var err error
-	for {
-		shortURL := utils.GenerateShortKey()
-		ctx, _ := context.WithTimeout(context.Background(), time.Second*5)
+	ctx, _ := context.WithTimeout(context.Background(), time.Second*5)
+	str, err := h.Storage.Add(ctx, userID, shortURL, URL)
+	for errors.Is(err, storage.ErrDuplicateValue) {
+		shortURL = utils.GenerateShortKey()
 		str, err = h.Storage.Add(ctx, userID, shortURL, URL)
-		if err != nil {
-			if errors.Is(err, storage.ErrDuplicateValue) {
-				continue
-			} else {
-				break
-			}
-		}
 	}
 	if errors.Is(err, storage.ErrExistingFullURL) {
 		return h.BaseURL + "/" + str, err

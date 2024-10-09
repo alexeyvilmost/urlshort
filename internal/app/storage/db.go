@@ -48,14 +48,11 @@ func (s *DBStorage) CheckDBConn(ctx context.Context) bool {
 }
 
 func (s *DBStorage) Get(ctx context.Context, shortURL string) (string, error) {
-	row, err := s.db.QueryContext(ctx, "SELECT full_url, is_deleted FROM urls WHERE short_url = $1;", shortURL)
-	if err != nil {
-		return "", err
-	}
+	row := s.db.QueryRowContext(ctx, "SELECT full_url, is_deleted FROM urls WHERE short_url = $1;", shortURL)
 	var result string
 	var deleted bool
 
-	err = row.Scan(&result, &deleted)
+	err := row.Scan(&result, &deleted)
 	if err != nil {
 		if err == sql.ErrNoRows {
 			return "", ErrNoValue
@@ -70,14 +67,11 @@ func (s *DBStorage) Get(ctx context.Context, shortURL string) (string, error) {
 }
 
 func (s *DBStorage) GetByUser(ctx context.Context, shortURL, userID string) (string, error) {
-	row, err := s.db.QueryContext(ctx, "SELECT full_url, is_deleted FROM urls WHERE short_url = $1 AND user_id = $2;", shortURL, userID)
-	if err != nil {
-		return "", err
-	}
+	row := s.db.QueryRowContext(ctx, "SELECT full_url, is_deleted FROM urls WHERE short_url = $1 AND user_id = $2;", shortURL, userID)
 	var result string
 	var deleted bool
 
-	err = row.Scan(&result, &deleted)
+	err := row.Scan(&result, &deleted)
 	if err != nil {
 		if err == sql.ErrNoRows {
 			return "", ErrNoValue
@@ -120,17 +114,14 @@ func (s *DBStorage) Add(ctx context.Context, userID, shortURL, fullURL string) (
 	default:
 		return "", err
 	}
-	row, err := s.db.QueryContext(ctx, "INSERT INTO urls VALUES ($1, $2, $3, FALSE) ON CONFLICT DO NOTHING RETURNING short_url;", shortURL, fullURL, userID)
-	if err != nil {
-		return "", err
-	}
+	row := s.db.QueryRowContext(ctx, "INSERT INTO urls VALUES ($1, $2, $3, FALSE) ON CONFLICT DO NOTHING RETURNING short_url;", shortURL, fullURL, userID)
 	var str string
 	err = row.Scan(&str)
 	if err != nil {
 		// if nothing return, value already presented
 		if err == sql.ErrNoRows {
 			log.Info().Msg("searching for full_url: " + fullURL)
-			row := s.db.QueryRow("SELECT short_url FROM urls WHERE full_url = $1 AND user_id = $2;", fullURL, userID)
+			row := s.db.QueryRowContext(ctx, "SELECT short_url FROM urls WHERE full_url = $1 AND user_id = $2;", fullURL, userID)
 			var result string
 
 			err = row.Scan(&result)

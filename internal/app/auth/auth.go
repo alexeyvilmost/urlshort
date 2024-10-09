@@ -49,7 +49,7 @@ func GetUserID(tokenString string) (string, error) {
 
 	if !token.Valid {
 		fmt.Println("Token is not valid")
-		return "", fmt.Errorf("Invalid token")
+		return "", fmt.Errorf("invalid token")
 	}
 
 	return claims.UserID, nil

@@ -220,7 +220,7 @@ func (h Handlers) DeteleURLs(res http.ResponseWriter, req *http.Request) {
 		ctx, cancel := context.WithTimeout(context.Background(), time.Second*5)
 		defer cancel()
 
-		go h.Storage.DeleteURLs(ctx, userID, shortURLs)
+		h.Storage.DeleteURLs(ctx, userID, shortURLs)
 	}(userID, shortURLs)
 	res.WriteHeader(http.StatusAccepted)
 }

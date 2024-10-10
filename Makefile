@@ -6,7 +6,7 @@ DBCONN="port=5432 user=app dbname=shortener password=app host=localhost"
 
 FILENAME=/Users/study/study/urlshort/cmd/shortener/storage.csv
 
-FLAGS= #-d $(DBCONN) #-f $(FILENAME)
+FLAGS= -d $(DBCONN) #-f $(FILENAME)
 
 .PHONY: golangci-lint-run
 golangci-lint-run: _golangci-lint-rm-unformatted-report

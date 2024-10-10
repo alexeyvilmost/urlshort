@@ -216,10 +216,12 @@ func (h Handlers) DeteleURLs(res http.ResponseWriter, req *http.Request) {
 		return
 	}
 	userID := req.Header.Get("user-id-auth")
-	ctx, cancel := context.WithTimeout(context.Background(), time.Second*5)
-	defer cancel()
+	go func(userID string, shortURLs []string) {
+		ctx, cancel := context.WithTimeout(context.Background(), time.Second*5)
+		defer cancel()
 
-	go h.Storage.DeleteURLs(ctx, userID, shortURLs)
+		go h.Storage.DeleteURLs(ctx, userID, shortURLs)
+	}(userID, shortURLs)
 	res.WriteHeader(http.StatusAccepted)
 }
 

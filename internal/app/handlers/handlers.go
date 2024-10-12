@@ -7,7 +7,6 @@ import (
 	"fmt"
 	"io"
 	"net/http"
-	"time"
 
 	"github.com/rs/zerolog/log"
 
@@ -51,10 +50,8 @@ func NewHandlers(config *config.Config) (*Handlers, error) {
 	return result, nil
 }
 
-func (h Handlers) Shorten(URL, userID string) (string, error) {
+func (h Handlers) Shorten(ctx context.Context, URL, userID string) (string, error) {
 	shortURL := utils.GenerateShortKey()
-	ctx, cancel := context.WithTimeout(context.Background(), time.Second*5)
-	defer cancel()
 
 	str, err := h.Storage.Add(ctx, userID, shortURL, URL)
 	for errors.Is(err, storage.ErrDuplicateValue) {
@@ -80,7 +77,7 @@ func (h Handlers) ShortenerJSON(res http.ResponseWriter, req *http.Request) {
 		return
 	}
 	userID := req.Header.Get("user-id-auth")
-	str, err := h.Shorten(url.URL, userID)
+	str, err := h.Shorten(req.Context(), url.URL, userID)
 	if errors.Is(err, storage.ErrExistingFullURL) {
 		res.Header().Add("Content-Type", "application/json")
 		res.WriteHeader(http.StatusConflict)
@@ -111,7 +108,7 @@ func (h Handlers) ShortenBatch(res http.ResponseWriter, req *http.Request) {
 	}
 	userID := req.Header.Get("user-id-auth")
 	for _, data := range urlDataList {
-		str, err := h.Shorten(data.OriginalURL, userID)
+		str, err := h.Shorten(req.Context(), data.OriginalURL, userID)
 		switch err {
 		case nil:
 			// pass
@@ -137,7 +134,7 @@ func (h Handlers) Shortener(res http.ResponseWriter, req *http.Request) {
 		return
 	}
 	userID := req.Header.Get("user-id-auth")
-	str, err := h.Shorten(string(fullURL), userID)
+	str, err := h.Shorten(req.Context(), string(fullURL), userID)
 	if errors.Is(err, storage.ErrExistingFullURL) {
 		res.WriteHeader(http.StatusConflict)
 		io.WriteString(res, str)
@@ -154,10 +151,8 @@ func (h Handlers) Shortener(res http.ResponseWriter, req *http.Request) {
 
 func (h Handlers) Expander(res http.ResponseWriter, req *http.Request) {
 	req.URL.Path = req.URL.Path[1:]
-	ctx, cancel := context.WithTimeout(context.Background(), time.Second*5)
-	defer cancel()
 
-	fullURL, err := h.Storage.Get(ctx, req.URL.Path)
+	fullURL, err := h.Storage.Get(req.Context(), req.URL.Path)
 	if errors.Is(err, storage.ErrNoValue) {
 		http.Error(res, "Такой ссылки нет", http.StatusBadRequest)
 		return
@@ -182,10 +177,8 @@ func (h Handlers) UserURLs(res http.ResponseWriter, req *http.Request) {
 		return
 	}
 	userID := req.Header.Get("user-id-auth")
-	ctx, cancel := context.WithTimeout(context.Background(), time.Second*5)
-	defer cancel()
 
-	urls, err := h.Storage.GetUserURLs(ctx, userID)
+	urls, err := h.Storage.GetUserURLs(req.Context(), userID)
 	if err != nil {
 		log.Info().Err(err).Msg("Внутренняя ошибка")
 		http.Error(res, "Внутренняя ошибка", http.StatusInternalServerError)
@@ -217,19 +210,14 @@ func (h Handlers) DeteleURLs(res http.ResponseWriter, req *http.Request) {
 	}
 	userID := req.Header.Get("user-id-auth")
 	go func(userID string, shortURLs []string) {
-		ctx, cancel := context.WithTimeout(context.Background(), time.Second*5)
-		defer cancel()
 
-		h.Storage.DeleteURLs(ctx, userID, shortURLs)
+		h.Storage.DeleteURLs(req.Context(), userID, shortURLs)
 	}(userID, shortURLs)
 	res.WriteHeader(http.StatusAccepted)
 }
 
 func (h Handlers) Ping(res http.ResponseWriter, req *http.Request) {
-	ctx, cancel := context.WithTimeout(context.Background(), time.Second*5)
-	defer cancel()
-
-	ok := h.Storage.CheckDBConn(ctx)
+	ok := h.Storage.CheckDBConn(req.Context())
 	if !ok {
 		http.Error(res, "Соединение с БД отсутствует", http.StatusInternalServerError)
 		return

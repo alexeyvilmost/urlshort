@@ -7,6 +7,7 @@ import (
 	"fmt"
 	"io"
 	"net/http"
+	"time"
 
 	"github.com/rs/zerolog/log"
 
@@ -210,7 +211,7 @@ func (h Handlers) DeteleURLs(res http.ResponseWriter, req *http.Request) {
 	}
 	userID := req.Header.Get("user-id-auth")
 	go func(userID string, shortURLs []string) {
-		ctx, cancel := context.WithCancel(req.Context())
+		ctx, cancel := context.WithTimeout(context.Background(), time.Second*5)
 		defer cancel()
 
 		h.Storage.DeleteURLs(ctx, userID, shortURLs)

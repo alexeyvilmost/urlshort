@@ -4,6 +4,7 @@ import (
 	"fmt"
 	"net/http"
 
+	"github.com/alexeyvilmost/urlshort.git/internal/app/auth"
 	"github.com/alexeyvilmost/urlshort.git/internal/app/compressing"
 	"github.com/alexeyvilmost/urlshort.git/internal/app/config"
 	"github.com/alexeyvilmost/urlshort.git/internal/app/handlers"
@@ -20,11 +21,13 @@ func StartServer() error {
 	}
 
 	r := chi.NewRouter()
-	r.Use(compressing.WithCompress, logging.WithLogging)
+	r.Use(compressing.WithCompress, logging.WithLogging, auth.WithAuth)
 	r.Post("/", handlers.Shortener)
 	r.Post("/api/shorten", handlers.ShortenerJSON)
 	r.Post("/api/shorten/batch", handlers.ShortenBatch)
 	r.Get("/{short_url}", handlers.Expander)
+	r.Get("/api/user/urls", handlers.UserURLs)
+	r.Delete("/api/user/urls", handlers.DeteleURLs)
 	r.Get("/ping", handlers.Ping)
 	zerolog.SetGlobalLevel(config.LogLevel)
 	err = http.ListenAndServe(config.ServerAddress, r)
